@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { DataProvider } from './contexts/DataContext.jsx';
 import ProtectedRoute from './components/layout/ProtectedRoute.jsx';
@@ -20,7 +20,7 @@ import CountdownsPage from './pages/CountdownsPage.jsx';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <DataProvider>
           <Routes>
@@ -52,6 +52,6 @@ export default function App() {
           </Routes>
         </DataProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
