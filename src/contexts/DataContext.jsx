@@ -46,8 +46,62 @@ export function DataProvider({ children }) {
       const all = {};
       keys.forEach((k, i) => { all[k] = results[i] || []; });
       setData(all);
+
+      // One-time sync: create timeline cards for existing diary/letters that don't have one yet
+      await syncMissingTimelineEntries(all);
+
     } catch (e) { console.warn('loadAll fatal:', e); }
     setLoading(false);
+  }
+
+  // Sync missing timeline entries from diary & letters
+  async function syncMissingTimelineEntries(all) {
+    const memories = all.memories || [];
+    const diaries = all.diary || [];
+    const letters = all.letters || [];
+    const diaryIdsInTimeline = new Set(memories.filter(m => m.type === 'diary' && m.diaryId).map(m => m.diaryId));
+    const letterIdsInTimeline = new Set(memories.filter(m => m.type === 'letter' && m.letterId).map(m => m.letterId));
+    const toAdd = [];
+
+    diaries.forEach(entry => {
+      if (!diaryIdsInTimeline.has(entry.id)) {
+        const shrimpEntry = entry.entries?.['xia-mi'];
+        const burgerEntry = entry.entries?.['han-bao'];
+        const content = shrimpEntry?.content || burgerEntry?.content || '';
+        const createdBy = shrimpEntry?.content ? 'xia-mi' : (burgerEntry?.content ? 'han-bao' : 'xia-mi');
+        if (!content) return;
+        toAdd.push({
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+          type: 'diary', diaryId: entry.id,
+          title: entry.topic || '无主题日记',
+          description: content.slice(0, 150) + (content.length > 150 ? '...' : ''),
+          date: entry.date || '',
+          createdBy, mood: 'cozy', moodEmoji: '📔',
+        });
+      }
+    });
+
+    letters.forEach(letter => {
+      if (!letterIdsInTimeline.has(letter.id)) {
+        toAdd.push({
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+          type: 'letter', letterId: letter.id,
+          title: '💌 ' + (letter.title || '一封时光信'),
+          description: (letter.content || '').slice(0, 150) + ((letter.content || '').length > 150 ? '...' : ''),
+          date: new Date(letter.writtenAt || Date.now()).toISOString().split('T')[0],
+          createdBy: letter.from || 'xia-mi', mood: 'excited', moodEmoji: '💌',
+        });
+      }
+    });
+
+    if (toAdd.length > 0) {
+      for (const item of toAdd) {
+        await supabase.from('couple_memories').insert(item);
+      }
+      // Reload memories
+      const { data: fresh } = await supabase.from('couple_memories').select('*').order('date', { ascending: false });
+      if (fresh) setData(prev => ({ ...prev, memories: fresh }));
+    }
   }
 
   function generateId() {
