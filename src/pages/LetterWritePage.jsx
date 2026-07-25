@@ -27,6 +27,7 @@ export default function LetterWritePage() {
     });
     // Auto-add to timeline
     addMemory({
+      id: 'mem_letter_' + letterId,
       type: 'letter',
       title: '💌 ' + title,
       description: content.slice(0, 150) + (content.length > 150 ? '...' : ''),
@@ -34,7 +35,6 @@ export default function LetterWritePage() {
       createdBy: user?.username,
       mood: 'excited',
       moodEmoji: '💌',
-      letterId,
     });
     navigate('/');
   };

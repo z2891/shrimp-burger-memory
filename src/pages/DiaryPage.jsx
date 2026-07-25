@@ -49,6 +49,7 @@ export default function DiaryPage() {
       addDiaryEntry(newEntry);
       // Auto-add to timeline
       addMemory({
+        id: 'mem_diary_' + diaryId,
         type: 'diary',
         title: entryData.topic,
         description: entryData.content.slice(0, 150) + (entryData.content.length > 150 ? '...' : ''),
@@ -56,7 +57,6 @@ export default function DiaryPage() {
         createdBy: user?.username,
         mood: entryData.mood,
         moodEmoji: '📔',
-        diaryId: diaryId,
       });
     }
     setShowEditor(false);
