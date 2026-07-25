@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import DiaryBook from '../components/diary/DiaryBook.jsx';
 import DiaryEditor from '../components/diary/DiaryEditor.jsx';
 import { useData } from '../contexts/DataContext.jsx';
@@ -10,26 +9,64 @@ export default function DiaryPage() {
   const { user } = useAuth();
   const [showEditor, setShowEditor] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [editingOwnContent, setEditingOwnContent] = useState(null);
+  const [editingOwnMood, setEditingOwnMood] = useState(null);
 
   const entries = data.diary || [];
 
+  // Write new or reply (partner hasn't written yet)
   const handleNewEntry = (existingEntry) => {
     setEditingEntry(existingEntry);
+    setEditingOwnContent(null);
+    setEditingOwnMood(null);
+    setShowEditor(true);
+  };
+
+  // Edit own existing entry
+  const handleEditOwn = (entry) => {
+    const ownEntry = entry.entries?.[user?.username];
+    setEditingEntry(entry);
+    setEditingOwnContent(ownEntry?.content || '');
+    setEditingOwnMood(ownEntry?.mood || 'happy-bubble');
     setShowEditor(true);
   };
 
   const handleSave = (entryData) => {
+    const updatedEntries = {
+      ...(editingEntry?.entries || {}),
+      [user.username]: {
+        content: entryData.content,
+        mood: entryData.mood,
+        photo: entryData.photo || editingEntry?.entries?.[user.username]?.photo || null,
+        writtenAt: Date.now(),
+      },
+    };
+
     if (editingEntry) {
-      const updatedEntries = {
-        ...editingEntry.entries,
-        [user.username]: {
-          content: entryData.content,
-          mood: entryData.mood,
-          writtenAt: Date.now(),
-        },
-      };
-      updateDiaryEntry(editingEntry.id, { entries: updatedEntries });
+      // Always just update this user's entry in the existing diary
+      if (!editingEntry.entries?.[user.username]?.content) {
+        // First time writing — set currentTurn
+        updateDiaryEntry(editingEntry.id, {
+          entries: updatedEntries,
+          currentTurn: user.username === 'xia-mi' ? 'han-bao' : 'xia-mi',
+        });
+      } else {
+        updateDiaryEntry(editingEntry.id, { entries: updatedEntries });
+      }
+
+      // Upsert timeline card
+      addMemory({
+        id: 'mem_diary_' + editingEntry.id,
+        type: 'diary',
+        title: entryData.topic || editingEntry.topic,
+        description: entryData.content.slice(0, 150) + (entryData.content.length > 150 ? '...' : ''),
+        date: entryData.date || editingEntry.date,
+        createdBy: user?.username,
+        mood: entryData.mood,
+        moodEmoji: '📔',
+      });
     } else {
+      // New diary
       const diaryId = 'diary_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
       const newEntry = {
         id: diaryId,
@@ -41,13 +78,13 @@ export default function DiaryPage() {
           [user.username]: {
             content: entryData.content,
             mood: entryData.mood,
+            photo: entryData.photo || null,
             writtenAt: Date.now(),
           },
         },
         currentTurn: user.username === 'xia-mi' ? 'han-bao' : 'xia-mi',
       };
       addDiaryEntry(newEntry);
-      // Auto-add to timeline
       addMemory({
         id: 'mem_diary_' + diaryId,
         type: 'diary',
@@ -61,6 +98,8 @@ export default function DiaryPage() {
     }
     setShowEditor(false);
     setEditingEntry(null);
+    setEditingOwnContent(null);
+    setEditingOwnMood(null);
   };
 
   return (
@@ -75,13 +114,16 @@ export default function DiaryPage() {
       {showEditor ? (
         <DiaryEditor
           existingEntry={editingEntry}
+          ownPreviousContent={editingOwnContent}
+          ownPreviousMood={editingOwnMood}
           onSave={handleSave}
-          onCancel={() => { setShowEditor(false); setEditingEntry(null); }}
+          onCancel={() => { setShowEditor(false); setEditingEntry(null); setEditingOwnContent(null); setEditingOwnMood(null); }}
         />
       ) : (
         <DiaryBook
           entries={entries}
           onNewEntry={handleNewEntry}
+          onEditOwn={handleEditOwn}
         />
       )}
     </div>

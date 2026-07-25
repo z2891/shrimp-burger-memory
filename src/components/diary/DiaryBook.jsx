@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { USERS } from '../../utils/constants.js';
 
-export default function DiaryBook({ entries, onNewEntry }) {
+export default function DiaryBook({ entries, onNewEntry, onEditOwn }) {
   const { user } = useAuth();
   const [expandedId, setExpandedId] = useState(null);
 
@@ -69,12 +69,29 @@ export default function DiaryBook({ entries, onNewEntry }) {
                   background: user?.color === '#FF6B6B' ? 'var(--shrimp-light)' : 'var(--burger-light)',
                   padding: 14, borderRadius: '14px',
                   border: `1.5px solid ${user?.color || 'var(--border-color)'}30`,
+                  position: 'relative',
                 }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-                    {user?.emoji} {user?.name}的日记
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      {user?.emoji} {user?.name}的日记
+                    </div>
+                    {ownEntry?.content && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onEditOwn(entry); }}
+                        className="hand-drawn-btn ghost small"
+                        style={{ padding: '2px 8px', fontSize: '0.7rem' }}
+                        title="修改日记"
+                      >✏️</button>
+                    )}
                   </div>
                   {ownEntry?.content ? (
-                    <p style={{ fontSize: '0.85rem', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{ownEntry.content}</p>
+                    <>
+                      {ownEntry.photo && (
+                        <img src={ownEntry.photo} alt="日记配图"
+                          style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, marginBottom: 8, border: '1px solid var(--border-color)' }} />
+                      )}
+                      <p style={{ fontSize: '0.85rem', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{ownEntry.content}</p>
+                    </>
                   ) : (
                     <button className="hand-drawn-btn primary small" onClick={(e) => { e.stopPropagation(); onNewEntry(entry); }}>
                       ✏️ 写日记
@@ -93,7 +110,13 @@ export default function DiaryBook({ entries, onNewEntry }) {
                     {partner?.emoji} {partner?.name}的日记
                   </div>
                   {partnerEntry?.content ? (
-                    <p style={{ fontSize: '0.85rem', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{partnerEntry.content}</p>
+                    <>
+                      {partnerEntry.photo && (
+                        <img src={partnerEntry.photo} alt="日记配图"
+                          style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, marginBottom: 8, border: '1px solid var(--border-color)' }} />
+                      )}
+                      <p style={{ fontSize: '0.85rem', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{partnerEntry.content}</p>
+                    </>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 60, color: 'var(--text-muted)', fontSize: '0.85rem', gap: 6 }}>
                       <span style={{ fontSize: '1.2rem' }}>🔐</span> 还没写呢～
