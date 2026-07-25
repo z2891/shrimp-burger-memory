@@ -1,33 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [selectedDoor, setSelectedDoor] = useState(null);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isOpening, setIsOpening] = useState(false);
+  const [openingDoor, setOpeningDoor] = useState(null);
 
-  const handleDoorClick = (username) => {
-    setSelectedDoor(username);
-    setPassword('');
-    setError('');
-  };
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (!selectedDoor || !password) return;
-
-    const result = login(selectedDoor, password);
-    if (result.success) {
-      setIsOpening(true);
-      setTimeout(() => navigate('/'), 1000);
-    } else {
-      setError(result.error);
-    }
+  const handleEnter = (username) => {
+    setOpeningDoor(username);
+    login(username);
+    setTimeout(() => navigate('/'), 1200);
   };
 
   return (
@@ -66,7 +50,7 @@ export default function LoginPage() {
         initial={{ y: -40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}
-        style={{ textAlign: 'center', marginBottom: 40, zIndex: 1 }}
+        style={{ textAlign: 'center', marginBottom: 48, zIndex: 1 }}
       >
         <div style={{ fontSize: '3rem', marginBottom: 8 }}>🏰</div>
         <h1 style={{
@@ -85,181 +69,126 @@ export default function LoginPage() {
       </motion.div>
 
       {/* Two Doors */}
-      <div style={{
-        display: 'flex', gap: 24, zIndex: 1,
-        flexWrap: 'wrap', justifyContent: 'center',
-      }}>
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.6 }}
+        style={{
+          display: 'flex', gap: 24, zIndex: 1,
+          flexWrap: 'wrap', justifyContent: 'center',
+        }}
+      >
         {/* 虾米's Door */}
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleDoorClick('xia-mi')}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={() => handleEnter('xia-mi')}
           style={{
-            width: 140, padding: '24px 16px',
-            borderRadius: 'var(--radius-card)',
-            background: selectedDoor === 'xia-mi'
-              ? 'linear-gradient(135deg, #FFE0E0, #FFB3B3)'
-              : 'linear-gradient(135deg, #3D2B1F, #5C4033)',
-            border: selectedDoor === 'xia-mi'
-              ? '3px solid #FF6B6B'
-              : '2px solid #8B7355',
+            width: 160, padding: '32px 20px',
+            borderRadius: '24px 8px 20px 12px',
+            background: 'linear-gradient(135deg, #FFE0E0, #FFB3B3)',
+            border: '3px solid #FF6B6B',
             cursor: 'pointer',
-            transition: 'all 0.3s',
             position: 'relative',
             overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(255, 107, 107, 0.3)',
           }}
         >
-          <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🦐</div>
+          {/* Door glow */}
+          <div style={{
+            position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)',
+            width: 60, height: 60, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,107,107,0.3), transparent)',
+          }} />
+          <div style={{ fontSize: '3rem', marginBottom: 10 }}>🦐</div>
           <div style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.2rem', color: selectedDoor === 'xia-mi' ? '#D94444' : '#FDE2D3',
+            fontSize: '1.3rem', color: '#D94444',
           }}>
             虾米请进
           </div>
-          {selectedDoor === 'xia-mi' && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              style={{
-                position: 'absolute', top: 8, right: 8,
-                width: 12, height: 12, borderRadius: '50%',
-                background: '#FF6B6B',
-              }}
-            />
-          )}
+          <div style={{ fontSize: '0.7rem', color: '#D9444488', marginTop: 4 }}>
+            点我进门 →
+          </div>
         </motion.button>
 
         {/* 汉堡's Door */}
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleDoorClick('han-bao')}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={() => handleEnter('han-bao')}
           style={{
-            width: 140, padding: '24px 16px',
-            borderRadius: 'var(--radius-card)',
-            background: selectedDoor === 'han-bao'
-              ? 'linear-gradient(135deg, #FFF0D0, #FFD699)'
-              : 'linear-gradient(135deg, #3D2B1F, #5C4033)',
-            border: selectedDoor === 'han-bao'
-              ? '3px solid #FFB347'
-              : '2px solid #8B7355',
+            width: 160, padding: '32px 20px',
+            borderRadius: '24px 8px 20px 12px',
+            background: 'linear-gradient(135deg, #FFF0D0, #FFD699)',
+            border: '3px solid #FFB347',
             cursor: 'pointer',
-            transition: 'all 0.3s',
             position: 'relative',
             overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(255, 179, 71, 0.3)',
           }}
         >
-          <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🍔</div>
+          <div style={{
+            position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)',
+            width: 60, height: 60, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,179,71,0.3), transparent)',
+          }} />
+          <div style={{ fontSize: '3rem', marginBottom: 10 }}>🍔</div>
           <div style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.2rem', color: selectedDoor === 'han-bao' ? '#E89920' : '#FDE2D3',
+            fontSize: '1.3rem', color: '#E89920',
           }}>
             汉堡请进
           </div>
-          {selectedDoor === 'han-bao' && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              style={{
-                position: 'absolute', top: 8, right: 8,
-                width: 12, height: 12, borderRadius: '50%',
-                background: '#FFB347',
-              }}
-            />
-          )}
+          <div style={{ fontSize: '0.7rem', color: '#E8992088', marginTop: 4 }}>
+            点我进门 →
+          </div>
         </motion.button>
-      </div>
+      </motion.div>
 
-      {/* Password Form */}
-      <AnimatePresence>
-        {selectedDoor && (
-          <motion.form
-            initial={{ opacity: 0, y: 20, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -10, height: 0 }}
-            onSubmit={handleLogin}
-            style={{
-              marginTop: 24, zIndex: 1,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 12,
-            }}
-          >
-            <div style={{
-              fontFamily: 'var(--font-body)',
-              color: '#B8A899', fontSize: '0.9rem',
-            }}>
-              请输入暗号
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={e => { setPassword(e.target.value); setError(''); }}
-              placeholder="🔒 暗号"
-              autoFocus
-              style={{
-                width: 240, padding: '12px 16px',
-                borderRadius: '25px',
-                border: error ? '2px solid #FF6B6B' : '2px solid #8B7355',
-                background: 'rgba(255,255,255,0.1)',
-                color: '#FDE2D3', fontSize: '1rem',
-                fontFamily: 'var(--font-body)',
-                textAlign: 'center',
-                outline: 'none',
-              }}
-            />
-            {error && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{ color: '#FF6B6B', fontSize: '0.85rem' }}
-              >
-                {error}
-              </motion.div>
-            )}
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                padding: '10px 32px', borderRadius: '25px',
-                border: 'none',
-                background: selectedDoor === 'xia-mi'
-                  ? 'linear-gradient(135deg, #FF6B6B, #FF8E8E)'
-                  : 'linear-gradient(135deg, #FFB347, #FFC773)',
-                color: '#fff', fontSize: '1rem',
-                fontFamily: 'var(--font-display)',
-                cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-              }}
-            >
-              🚪 开门
-            </motion.button>
-            <p style={{ color: '#8B7355', fontSize: '0.75rem', marginTop: 4 }}>
-              提示：我们的纪念日（2026.02.14）💕
-            </p>
-          </motion.form>
-        )}
-      </AnimatePresence>
+      <p style={{
+        fontFamily: 'var(--font-body)',
+        color: '#8B7355', fontSize: '0.8rem',
+        zIndex: 1, marginTop: 32,
+        textAlign: 'center',
+      }}>
+        选一扇门，进入我们的秘密星球 ✨
+      </p>
 
       {/* Door Opening Animation */}
-      {isOpening && (
+      {openingDoor && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           style={{
             position: 'fixed', inset: 0, zIndex: 999,
-            background: '#fff',
+            background: openingDoor === 'xia-mi'
+              ? 'linear-gradient(135deg, #ffffff, #FFE0E0)'
+              : 'linear-gradient(135deg, #ffffff, #FFF0D0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column',
           }}
         >
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            style={{ fontSize: '4rem' }}
+            style={{ fontSize: '5rem' }}
           >
-            {selectedDoor === 'xia-mi' ? '🦐' : '🍔'}
+            {openingDoor === 'xia-mi' ? '🦐' : '🍔'}
           </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.2rem', color: 'var(--text-primary)',
+              marginTop: 16,
+            }}
+          >
+            {openingDoor === 'xia-mi' ? '虾米' : '汉堡'}，欢迎回来 💕
+          </motion.p>
         </motion.div>
       )}
     </div>

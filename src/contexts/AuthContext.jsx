@@ -32,24 +32,19 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const login = useCallback((username, password) => {
+  const login = useCallback((username) => {
     const authData = getItem('couple_auth', { users: {} });
-    const userData = authData.users?.[username];
-    const correctPassword = '20260214';
+    let userData = authData.users?.[username];
 
+    // Auto-create user if first time or data was wiped
     if (!userData) {
-      return { success: false, error: '没有找到这个小伙伴哦～' };
-    }
-    // Accept both the stored password and the hardcoded correct one
-    if (userData.password !== password && correctPassword !== password) {
-      return { success: false, error: '暗号不对哦，再试试～提示：我们的纪念日 💕' };
-    }
-
-    // Auto-fix stored password if it was wrong
-    if (userData.password !== correctPassword) {
-      const fixedUsers = { ...authData.users, [username]: { ...userData, password: correctPassword } };
-      setItem('couple_auth', { ...authData, users: fixedUsers });
-      userData.password = correctPassword;
+      if (username === 'xia-mi') {
+        userData = { name: '虾米', emoji: '🦐', color: '#FF6B6B' };
+      } else {
+        userData = { name: '汉堡', emoji: '🍔', color: '#FFB347' };
+      }
+      authData.users = { ...authData.users, [username]: userData };
+      setItem('couple_auth', authData);
     }
 
     const session = { username, loggedInAt: new Date().toISOString() };

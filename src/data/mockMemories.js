@@ -125,16 +125,16 @@ export function initializeMockData() {
     MAILBOX: 'couple_mailbox',
   };
 
-  const CURRENT_VERSION = 'v2';
+  const CURRENT_VERSION = 'v3';
   if (localStorage.getItem('couple_version') === CURRENT_VERSION) return;
 
   const mock = createMockData();
 
-  // Always reset auth with correct password
+  // Set up user identities (no password — just click the door to enter)
   localStorage.setItem('couple_auth', JSON.stringify({
     users: {
-      'xia-mi': { name: '虾米', emoji: '🦐', color: '#FF6B6B', password: '20260214' },
-      'han-bao': { name: '汉堡', emoji: '🍔', color: '#FFB347', password: '20260214' },
+      'xia-mi': { name: '虾米', emoji: '🦐', color: '#FF6B6B' },
+      'han-bao': { name: '汉堡', emoji: '🍔', color: '#FFB347' },
     }
   }));
 
