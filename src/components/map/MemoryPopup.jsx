@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import MoodStamp, { MoodStampPicker } from '../common/MoodStamp.jsx';
 import { USERS, MOOD_STAMPS } from '../../utils/constants.js';
@@ -11,8 +12,10 @@ function getMoodId(memory) {
 }
 
 export default function MemoryPopup({ memory, onClose, onEdit, onDelete }) {
+  const navigate = useNavigate();
   const creator = USERS[memory.createdBy] || { name: '?', emoji: '❓', color: '#ccc' };
   const hasImage = memory.mediaUrl?.startsWith('data:');
+  const isDiaryOrLetter = memory.type === 'diary' || memory.type === 'letter';
   const [editing, setEditing] = useState(false);
   const [fullImage, setFullImage] = useState(false);
   const [form, setForm] = useState({
@@ -94,6 +97,23 @@ export default function MemoryPopup({ memory, onClose, onEdit, onDelete }) {
               <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{creator.emoji} {creator.name} · {memory.date}</span>
               {memory.mood && <MoodStamp moodId={getMoodId(memory)} size="small" />}
             </div>
+
+            {/* Quick links back to original content */}
+            {isDiaryOrLetter && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border-color)' }}>
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (memory.type === 'diary') navigate('/diary');
+                    else if (memory.type === 'letter') navigate('/letters');
+                  }}
+                  className="hand-drawn-btn small"
+                  style={{ width: '100%', justifyContent: 'center', fontSize: '0.78rem' }}
+                >
+                  {memory.type === 'diary' ? '📔 查看完整日记' : '💌 查看完整信件'} →
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

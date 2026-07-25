@@ -1,17 +1,18 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import MemoryPopup from './MemoryPopup.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { MOOD_STAMPS, USERS } from '../../utils/constants.js';
+import { USERS } from '../../utils/constants.js';
 
 const TYPE_INFO = { first: { icon: '🏆', label: '第一次' }, photo: { icon: '📸', label: '照片' }, diary: { icon: '📔', label: '日记' }, letter: { icon: '💌', label: '信件' } };
-const BADGES = ['⭐', '📸', '💕', '🏆', '🍳', '✈️', '🌈', '🎆', '🎂', '💍'];
 
 export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteMemory }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedMemory, setSelectedMemory] = useState(null);
   const [filter, setFilter] = useState('all');
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const sorted = [...memories].sort((a, b) => new Date(b.date) - new Date(a.date));
   const filtered = filter === 'all' ? sorted : sorted.filter(m => m.type === filter);
@@ -45,7 +46,49 @@ export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteM
             </button>
           ))}
         </div>
-        <button className="hand-drawn-btn primary small" onClick={() => setShowAddForm(true)}>➕ 添加</button>
+        <div style={{ position: 'relative' }}>
+          <button className="hand-drawn-btn primary small" onClick={() => setShowAddMenu(!showAddMenu)}>➕ 记录</button>
+          {showAddMenu && (
+            <>
+              <div onClick={() => setShowAddMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 11 }} />
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                style={{
+                  position: 'absolute', top: '100%', right: 0, marginTop: 8,
+                  background: 'var(--bg-card)', borderRadius: 'var(--radius-card)',
+                  border: '2px solid var(--border-color)', boxShadow: 'var(--shadow-popup)',
+                  padding: 12, display: 'flex', flexDirection: 'column', gap: 6,
+                  zIndex: 12, minWidth: 180,
+                }}>
+                {[
+                  { path: '/photos/upload', label: '📸 上传照片', desc: '选照片、加心情印记' },
+                  { path: '/diary', label: '📔 写日记', desc: '打开编辑器写日记' },
+                  { path: '/letters/write', label: '💌 写时光信', desc: '封印给未来的信' },
+                  { path: '/firsts', label: '🏆 记录第一次', desc: '添加里程碑' },
+                ].map(item => (
+                  <motion.button key={item.path} whileTap={{ scale: 0.97 }}
+                    onClick={() => { navigate(item.path); setShowAddMenu(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                      borderRadius: '12px', border: '1px solid var(--border-color)',
+                      background: 'var(--bg-card)', cursor: 'pointer',
+                      textAlign: 'left', fontFamily: 'var(--font-body)',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-primary)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
+                  >
+                    <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{item.label.slice(0, 2)}</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>{item.label}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{item.desc}</div>
+                    </div>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)' }}>→</span>
+                  </motion.button>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ===== WINDING TIMELINE ===== */}
@@ -62,7 +105,6 @@ export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteM
 
       <AnimatePresence>
         {selectedMemory && <MemoryPopup memory={selectedMemory} onEdit={onEditMemory} onDelete={onDeleteMemory} onClose={() => setSelectedMemory(null)} />}
-        {showAddForm && <AddMemoryModal user={user} onSubmit={(d) => { onAddMemory(d); setShowAddForm(false); }} onClose={() => setShowAddForm(false)} />}
       </AnimatePresence>
     </div>
   );
@@ -255,62 +297,3 @@ function WindingTimeline({ memories, user, onSelect }) {
   );
 }
 
-/** ===== ADD MEMORY MODAL ===== */
-function AddMemoryModal({ user, onSubmit, onClose }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState('photo');
-  const [mood, setMood] = useState('happy-bubble');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [badge, setBadge] = useState('⭐');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    const s = MOOD_STAMPS.find(x => x.id === mood);
-    onSubmit({
-      type, title: title.trim(), description: description.trim(), date,
-      createdBy: user?.username, mood: s?.id || 'happy-bubble',
-      moodEmoji: s?.emoji || '🫧',
-      isFirst: type === 'first', badge: type === 'first' ? badge : undefined,
-    });
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="modal-backdrop">
-      <motion.form initial={{ scale: 0.95, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 30 }}
-        onClick={e => e.stopPropagation()} className="modal-card" onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', margin: 0 }}>➕ 添加回忆</h3>
-        <select value={type} onChange={e => setType(e.target.value)} className="input-field">
-          <option value="photo">📸 照片记忆</option><option value="diary">📔 日记片段</option>
-          <option value="first">🏆 第一次</option><option value="letter">💌 一封信</option>
-        </select>
-        {type === 'first' && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {BADGES.map(b => (
-              <button key={b} type="button" onClick={() => setBadge(b)} className="chip"
-                style={{ borderColor: badge === b ? 'var(--color-gold)' : undefined, background: badge === b ? 'var(--gradient-golden)' : undefined, fontSize: '1.1rem' }}>{b}</button>
-            ))}
-          </div>
-        )}
-        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="标题 *" className="input-field" />
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="input-field" />
-        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="描述这个瞬间……" className="textarea-field" />
-        <div>
-          <label style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>心情印记</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {MOOD_STAMPS.slice(0, 8).map(s => (
-              <button key={s.id} type="button" onClick={() => setMood(s.id)} className="chip"
-                style={{ borderColor: mood === s.id ? s.color : undefined, background: mood === s.id ? s.color + '15' : undefined }}>{s.emoji} {s.label}</button>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" onClick={onClose} className="hand-drawn-btn">取消</button>
-          <button type="submit" className="hand-drawn-btn primary">💾 保存</button>
-        </div>
-      </motion.form>
-    </motion.div>
-  );
-}

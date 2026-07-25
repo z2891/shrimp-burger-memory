@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function LetterWritePage() {
   const navigate = useNavigate();
-  const { addLetter } = useData();
+  const { addLetter, addMemory } = useData();
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -19,17 +19,24 @@ export default function LetterWritePage() {
 
     const unlockAt = new Date(Date.now() + unlockIn * 86400000).toISOString();
 
+    const letterId = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     addLetter({
-      from: user?.username,
-      title,
-      content,
-      sealColor,
-      writtenAt: Date.now(),
-      unlockAt,
-      isOpened: false,
+      id: letterId,
+      from: user?.username, title, content, sealColor,
+      writtenAt: Date.now(), unlockAt, isOpened: false,
     });
-
-    navigate('/letters');
+    // Auto-add to timeline
+    addMemory({
+      type: 'letter',
+      title: '💌 ' + title,
+      description: content.slice(0, 150) + (content.length > 150 ? '...' : ''),
+      date: new Date().toISOString().split('T')[0],
+      createdBy: user?.username,
+      mood: 'excited',
+      moodEmoji: '💌',
+      letterId,
+    });
+    navigate('/');
   };
 
   return (

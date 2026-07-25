@@ -61,7 +61,7 @@ export default function PhotoUploadPage() {
     });
     setTimeout(() => {
       setUploading(false);
-      navigate('/photos');
+      navigate('/');
     }, 300);
   };
 

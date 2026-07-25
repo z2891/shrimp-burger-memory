@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function DiaryPage() {
-  const { data, addDiaryEntry, updateDiaryEntry } = useData();
+  const { data, addDiaryEntry, updateDiaryEntry, addMemory } = useData();
   const { user } = useAuth();
   const [showEditor, setShowEditor] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -20,7 +20,6 @@ export default function DiaryPage() {
 
   const handleSave = (entryData) => {
     if (editingEntry) {
-      // Reply to existing entry
       const updatedEntries = {
         ...editingEntry.entries,
         [user.username]: {
@@ -31,8 +30,9 @@ export default function DiaryPage() {
       };
       updateDiaryEntry(editingEntry.id, { entries: updatedEntries });
     } else {
-      // New entry
+      const diaryId = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
       const newEntry = {
+        id: diaryId,
         date: entryData.date,
         topic: entryData.topic,
         entries: {
@@ -47,6 +47,17 @@ export default function DiaryPage() {
         currentTurn: user.username === 'xia-mi' ? 'han-bao' : 'xia-mi',
       };
       addDiaryEntry(newEntry);
+      // Auto-add to timeline
+      addMemory({
+        type: 'diary',
+        title: entryData.topic,
+        description: entryData.content.slice(0, 150) + (entryData.content.length > 150 ? '...' : ''),
+        date: entryData.date,
+        createdBy: user?.username,
+        mood: entryData.mood,
+        moodEmoji: '📔',
+        diaryId: diaryId,
+      });
     }
     setShowEditor(false);
     setEditingEntry(null);
