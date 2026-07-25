@@ -53,8 +53,8 @@ export const VOUCHER_TEMPLATES = [
 
 export const ANNIVERSARIES = [
   { date: '02-14', label: '在一起的日子 💕', isMain: true },
-  { date: '03-20', label: '虾米的生日 🦐', forUser: 'xia-mi' },
-  { date: '09-08', label: '汉堡的生日 🍔', forUser: 'han-bao' },
+  { date: '01-23', label: '虾米的生日 🦐', forUser: 'xia-mi' },
+  { date: '12-12', label: '汉堡的生日 🍔', forUser: 'han-bao' },
 ];
 
 export const RELATIONSHIP_START = '2026-02-14';

@@ -10,8 +10,8 @@ export default function ConfettiOverlay({ onDismiss }) {
     const today = new Date();
     const mmdd = `${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     if (mmdd === '02-14') return '💕 今天是我们的纪念日（情人节）！';
-    if (mmdd === '03-20') return '🦐 虾米生日快乐！';
-    if (mmdd === '09-08') return '🍔 汉堡生日快乐！';
+    if (mmdd === '01-23') return '🦐 虾米生日快乐！';
+    if (mmdd === '12-12') return '🍔 汉堡生日快乐！';
     return '🎉 今天是特别的日子！';
   });
 

@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
   function checkAnniversary() {
     const today = new Date();
     const mmdd = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const specialDates = ['02-14', '03-20', '09-08'];
+    const specialDates = ['02-14', '01-23', '12-12'];
     if (specialDates.includes(mmdd)) setIsAnniversary(true);
   }
 
