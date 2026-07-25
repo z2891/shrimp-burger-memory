@@ -125,10 +125,12 @@ export function initializeMockData() {
     MAILBOX: 'couple_mailbox',
   };
 
-  if (localStorage.getItem('couple_initialized')) return;
+  const CURRENT_VERSION = 'v2';
+  if (localStorage.getItem('couple_version') === CURRENT_VERSION) return;
 
   const mock = createMockData();
 
+  // Always reset auth with correct password
   localStorage.setItem('couple_auth', JSON.stringify({
     users: {
       'xia-mi': { name: '虾米', emoji: '🦐', color: '#FF6B6B', password: '20260214' },
@@ -146,5 +148,5 @@ export function initializeMockData() {
   localStorage.setItem('couple_firsts', JSON.stringify(mock.firsts));
   localStorage.setItem('couple_mailbox', JSON.stringify([]));
 
-  localStorage.setItem('couple_initialized', 'true');
+  localStorage.setItem('couple_version', CURRENT_VERSION);
 }

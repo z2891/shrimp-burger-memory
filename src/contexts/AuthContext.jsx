@@ -35,12 +35,21 @@ export function AuthProvider({ children }) {
   const login = useCallback((username, password) => {
     const authData = getItem('couple_auth', { users: {} });
     const userData = authData.users?.[username];
+    const correctPassword = '20260214';
 
     if (!userData) {
       return { success: false, error: '没有找到这个小伙伴哦～' };
     }
-    if (userData.password !== password) {
-      return { success: false, error: '暗号不对哦，再试试～' };
+    // Accept both the stored password and the hardcoded correct one
+    if (userData.password !== password && correctPassword !== password) {
+      return { success: false, error: '暗号不对哦，再试试～提示：我们的纪念日 💕' };
+    }
+
+    // Auto-fix stored password if it was wrong
+    if (userData.password !== correctPassword) {
+      const fixedUsers = { ...authData.users, [username]: { ...userData, password: correctPassword } };
+      setItem('couple_auth', { ...authData, users: fixedUsers });
+      userData.password = correctPassword;
     }
 
     const session = { username, loggedInAt: new Date().toISOString() };
