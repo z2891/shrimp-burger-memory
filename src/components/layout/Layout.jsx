@@ -1,9 +1,9 @@
-import { Outlet } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import NavBar from './NavBar.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import ConfettiOverlay from '../common/ConfettiOverlay.jsx';
+import ErrorBoundary from '../common/ErrorBoundary.jsx';
 
 export default function Layout() {
   const location = useLocation();
@@ -19,26 +19,21 @@ export default function Layout() {
       width: '100%',
       position: 'relative',
     }}>
-      {/* Anniversary celebration */}
-      {isAnniversary && (
-        <ConfettiOverlay onDismiss={dismissAnniversary} />
-      )}
+      {isAnniversary && <ConfettiOverlay onDismiss={dismissAnniversary} />}
 
-      {/* Floating hearts background */}
       <FloatingHearts />
 
-      <AnimatePresence mode="wait">
+      <ErrorBoundary key={location.pathname}>
         <motion.div
           key={location.pathname}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          style={{ padding: '0 16px' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
+          style={{ padding: '0 16px', position: 'relative', zIndex: 1 }}
         >
           <Outlet />
         </motion.div>
-      </AnimatePresence>
+      </ErrorBoundary>
 
       <NavBar />
     </div>
