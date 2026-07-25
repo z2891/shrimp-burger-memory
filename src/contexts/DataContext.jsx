@@ -54,7 +54,7 @@ export function DataProvider({ children }) {
     setLoading(false);
   }
 
-  // Sync missing timeline entries from diary & letters
+  // Sync missing timeline entries from diary, letters, firsts
   async function syncMissingTimelineEntries(all) {
     const memories = all.memories || [];
     const diaries = all.diary || [];
@@ -94,6 +94,25 @@ export function DataProvider({ children }) {
         date: new Date(letter.writtenAt || Date.now()).toISOString().split('T')[0],
         createdBy: letter.from || 'xia-mi', mood: 'excited', moodEmoji: '💌',
       });
+    });
+
+    // Sync firsts to timeline
+    const firsts = all.firsts || [];
+    const existingFirstTitles = new Set(
+      memories.filter(m => m.type === 'first').map(m => m.title)
+    );
+    firsts.forEach(f => {
+      if (!existingFirstTitles.has(f.title)) {
+        toAdd.push({
+          id: 'first_' + f.id,
+          type: 'first', title: f.title,
+          description: f.description || '',
+          date: f.date || '',
+          createdBy: 'xia-mi',
+          isFirst: true, badge: f.badge || '⭐',
+          mood: 'happy-bubble', moodEmoji: '🏆',
+        });
+      }
     });
 
     if (toAdd.length > 0) {

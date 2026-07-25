@@ -5,7 +5,7 @@ import { useData } from '../contexts/DataContext.jsx';
 const BADGES = ['📸','🤝','💕','🍳','✈️','🌈','🎆','🎂','💯','⭐','🎁','🏠','💍','🎓'];
 
 export default function FirstsPage() {
-  const { data, addFirst, updateFirst, deleteFirst } = useData();
+  const { data, addFirst, updateFirst, deleteFirst, addMemory } = useData();
   const firsts = data.firsts || [];
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ title: '', date: '', description: '', badge: '⭐' });
@@ -16,8 +16,12 @@ export default function FirstsPage() {
   const handleSave = (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.date) return;
-    if (editing === 'new') addFirst({ title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge, unlocked: true });
-    else updateFirst(editing.id, { title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge });
+    if (editing === 'new') {
+      const newFirst = { title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge, unlocked: true };
+      addFirst(newFirst);
+      // Auto-add to timeline
+      addMemory({ type: 'first', title: newFirst.title, description: newFirst.description, date: newFirst.date, createdBy: 'xia-mi', isFirst: true, badge: newFirst.badge, mood: 'happy-bubble', moodEmoji: '🏆' });
+    } else updateFirst(editing.id, { title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge });
     setEditing(null);
   };
 
