@@ -30,7 +30,7 @@ export default function DiaryPage() {
       };
       updateDiaryEntry(editingEntry.id, { entries: updatedEntries });
     } else {
-      const diaryId = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+      const diaryId = 'diary_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
       const newEntry = {
         id: diaryId,
         date: entryData.date,

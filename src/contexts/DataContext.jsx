@@ -59,44 +59,48 @@ export function DataProvider({ children }) {
     const memories = all.memories || [];
     const diaries = all.diary || [];
     const letters = all.letters || [];
-    const diaryIdsInTimeline = new Set(memories.filter(m => m.type === 'diary' && m.diaryId).map(m => m.diaryId));
-    const letterIdsInTimeline = new Set(memories.filter(m => m.type === 'letter' && m.letterId).map(m => m.letterId));
+
+    // Match by checking if any timeline card already references this diary/letter by title+type
+    const existingTimelineTitles = new Set(
+      memories.filter(m => m.type === 'diary' || m.type === 'letter').map(m => m.type + '::' + m.description?.slice(0, 40))
+    );
     const toAdd = [];
 
     diaries.forEach(entry => {
-      if (!diaryIdsInTimeline.has(entry.id)) {
-        const shrimpEntry = entry.entries?.['xia-mi'];
-        const burgerEntry = entry.entries?.['han-bao'];
-        const content = shrimpEntry?.content || burgerEntry?.content || '';
-        const createdBy = shrimpEntry?.content ? 'xia-mi' : (burgerEntry?.content ? 'han-bao' : 'xia-mi');
-        if (!content) return;
-        toAdd.push({
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
-          type: 'diary', diaryId: entry.id,
-          title: entry.topic || '无主题日记',
-          description: content.slice(0, 150) + (content.length > 150 ? '...' : ''),
-          date: entry.date || '',
-          createdBy, mood: 'cozy', moodEmoji: '📔',
-        });
-      }
+      const shrimpEntry = entry.entries?.['xia-mi'];
+      const burgerEntry = entry.entries?.['han-bao'];
+      const content = shrimpEntry?.content || burgerEntry?.content || '';
+      const createdBy = shrimpEntry?.content ? 'xia-mi' : (burgerEntry?.content ? 'han-bao' : 'xia-mi');
+      if (!content) return;
+      const desc = content.slice(0, 150) + (content.length > 150 ? '...' : '');
+      if (existingTimelineTitles.has('diary::' + desc.slice(0, 40))) return;
+
+      toAdd.push({
+        id: 'diary_' + entry.id,
+        type: 'diary', title: entry.topic || '无主题日记',
+        description: desc, date: entry.date || '',
+        createdBy, mood: 'cozy', moodEmoji: '📔',
+      });
     });
 
     letters.forEach(letter => {
-      if (!letterIdsInTimeline.has(letter.id)) {
-        toAdd.push({
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
-          type: 'letter', letterId: letter.id,
-          title: '💌 ' + (letter.title || '一封时光信'),
-          description: (letter.content || '').slice(0, 150) + ((letter.content || '').length > 150 ? '...' : ''),
-          date: new Date(letter.writtenAt || Date.now()).toISOString().split('T')[0],
-          createdBy: letter.from || 'xia-mi', mood: 'excited', moodEmoji: '💌',
-        });
-      }
+      const desc = (letter.content || '').slice(0, 150) + ((letter.content || '').length > 150 ? '...' : '');
+      if (!letter.content || existingTimelineTitles.has('letter::' + desc.slice(0, 40))) return;
+
+      toAdd.push({
+        id: 'letter_' + letter.id,
+        type: 'letter', title: '💌 ' + (letter.title || '一封时光信'),
+        description: desc,
+        date: new Date(letter.writtenAt || Date.now()).toISOString().split('T')[0],
+        createdBy: letter.from || 'xia-mi', mood: 'excited', moodEmoji: '💌',
+      });
     });
 
     if (toAdd.length > 0) {
+      console.log('Syncing', toAdd.length, 'missing timeline entries');
       for (const item of toAdd) {
-        await supabase.from('couple_memories').insert(item);
+        const { error } = await supabase.from('couple_memories').upsert(item, { onConflict: 'id' });
+        if (error) console.warn('Sync insert error:', error.message);
       }
       // Reload memories
       const { data: fresh } = await supabase.from('couple_memories').select('*').order('date', { ascending: false });
