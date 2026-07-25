@@ -13,36 +13,30 @@ export default function Layout() {
 
   return (
     <div style={{
-      minHeight: '100dvh',
-      paddingBottom: '80px',
-      paddingTop: '50px',
-      maxWidth: '480px',
-      margin: '0 auto',
-      width: '100%',
-      position: 'relative',
+      minHeight: '100dvh', paddingBottom: '80px',
+      maxWidth: '480px', margin: '0 auto', width: '100%', position: 'relative',
     }}>
+      {/* Top gradient bar */}
+      <div style={{
+        position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: 480, height: 50, zIndex: 50, pointerEvents: 'none',
+        background: 'linear-gradient(180deg, var(--bg-primary) 60%, transparent)',
+      }} />
+
       {isAnniversary && <ConfettiOverlay onDismiss={dismissAnniversary} />}
 
-      <FloatingHearts />
+      <FloatingParticles />
 
-      {dataLoading && (
-        <div style={{
-          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          zIndex: 50, textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '2rem', animation: 'pulse 1.5s ease-in-out infinite' }}>💕</div>
-          <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>加载中...</p>
-        </div>
-      )}
-
-      {!dataLoading && (
+      {dataLoading ? (
+        <LoadingScreen />
+      ) : (
         <ErrorBoundary key={location.pathname}>
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.25 }}
-            style={{ padding: '0 16px', position: 'relative', zIndex: 1 }}
+            transition={{ duration: 0.3 }}
+            style={{ padding: '52px 16px 0', position: 'relative', zIndex: 1 }}
           >
             <Outlet />
           </motion.div>
@@ -54,25 +48,51 @@ export default function Layout() {
   );
 }
 
-function FloatingHearts() {
+function LoadingScreen() {
+  return (
+    <div style={{
+      minHeight: '80vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 16,
+    }}>
+      <motion.div
+        animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ fontSize: '3rem' }}
+      >💕</motion.div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {[0, 1, 2].map(i => (
+          <motion.div key={i}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
+            style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--shrimp-color)', opacity: 0.5 }}
+          />
+        ))}
+      </div>
+      <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+        正在加载我们的回忆...
+      </p>
+    </div>
+  );
+}
+
+function FloatingParticles() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      {['💕', '🫧', '✨', '🌸', '🍀', '💫'].map((emoji, i) => (
-        <motion.div
-          key={i}
-          initial={{ y: '110vh', x: Math.random() * 100 + '%', opacity: 0 }}
+      {['💕', '🫧', '✨', '🌸', '🍀', '💫', '⭐', '🌷'].map((emoji, i) => (
+        <motion.div key={i}
+          initial={{ y: '120vh', x: (15 + i * 11) + '%', opacity: 0 }}
           animate={{
-            y: '-10vh',
-            opacity: [0, 0.6, 0.6, 0],
-            x: ['calc(' + Math.random() * 100 + '%)', 'calc(' + Math.random() * 100 + '%)'],
+            y: '-15vh',
+            opacity: [0, 0.45, 0.45, 0],
+            x: [(15 + i * 11) + '%', (15 + i * 11 + (i % 2 ? 8 : -8)) + '%'],
           }}
           transition={{
-            duration: 10 + Math.random() * 15,
+            duration: 12 + i * 3,
             repeat: Infinity,
-            delay: Math.random() * 10,
+            delay: i * 2.5,
             ease: 'linear',
           }}
-          style={{ position: 'absolute', fontSize: '1.2rem' }}
+          style={{ position: 'absolute', fontSize: '1rem' }}
         >
           {emoji}
         </motion.div>

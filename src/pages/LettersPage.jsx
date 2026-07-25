@@ -11,7 +11,6 @@ export default function LettersPage() {
   const { user } = useAuth();
   const [openedId, setOpenedId] = useState(null);
   const letters = data.letters || [];
-
   const now = Date.now();
 
   const handleOpen = (letter) => {
@@ -22,90 +21,67 @@ export default function LettersPage() {
 
   return (
     <div>
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem' }}>💌 时光信</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-          写给未来的信，到期才能打开
-        </p>
+      <div className="page-header">
+        <h1>💌 时光信</h1>
+        <p>写给未来的信，到期才能打开 ✨</p>
       </div>
 
-      <button className="hand-drawn-btn primary" onClick={() => navigate('/letters/write')} style={{ marginBottom: 20, width: '100%', justifyContent: 'center' }}>
+      <button className="hand-drawn-btn primary" onClick={() => navigate('/letters/write')}
+        style={{ width: '100%', justifyContent: 'center', marginBottom: 20 }}>
         ✍️ 写一封时光信
       </button>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {letters.map(letter => {
-          const fromUser = USERS[letter.from];
-          const isUnlocked = new Date(letter.unlockAt).getTime() <= now;
-          const isOpened = openedId === letter.id;
-
-          return (
-            <motion.div
-              key={letter.id}
-              layout
-              className="hand-drawn-card"
-              style={{
-                cursor: isUnlocked ? 'pointer' : 'default',
-                opacity: isUnlocked ? 1 : 0.7,
-                borderColor: isUnlocked ? 'var(--color-gold)' : 'var(--border-color)',
-              }}
-              onClick={() => handleOpen(letter)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                {/* Envelope */}
-                <div style={{
-                  width: 50, height: 50, borderRadius: '12px',
-                  background: letter.sealColor + '30',
-                  border: '2px solid ' + letter.sealColor,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.5rem',
-                }}>
-                  💌
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem' }}>
-                    {letter.title}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {fromUser?.emoji} {fromUser?.name} · {
-                      isUnlocked
-                        ? letter.isOpened ? '已打开' : '可打开'
-                        : '还有 ' + Math.ceil((new Date(letter.unlockAt).getTime() - now) / 86400000) + ' 天'
-                    }
-                  </div>
-                </div>
-                {!isUnlocked && <span>🔒</span>}
-                {isUnlocked && !letter.isOpened && <span style={{ color: 'var(--color-gold)' }}>✨</span>}
-              </div>
-
-              <AnimatePresence>
-                {isOpened && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    style={{
-                      marginTop: 12, padding: 12,
-                      background: letter.sealColor + '10',
-                      borderRadius: '12px',
-                      fontFamily: 'var(--font-body)',
-                      fontSize: '0.9rem',
-                      lineHeight: 1.8,
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {letter.content}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
-
-        {letters.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>📮</div>
-            <p>还没有时光信，写一封给未来的Ta吧～</p>
+        {letters.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">📮</span>
+            <p className="empty-title">还没有时光信</p>
+            <p className="empty-subtitle">写一封给未来的Ta吧～</p>
           </div>
+        ) : (
+          letters.map(letter => {
+            const fromUser = USERS[letter.from];
+            const isUnlocked = new Date(letter.unlockAt).getTime() <= now;
+            const isOpened = openedId === letter.id;
+
+            return (
+              <motion.div key={letter.id}
+                initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                className={`hand-drawn-card flat${isUnlocked ? ' golden' : ''}`}
+                style={{ padding: 16, cursor: isUnlocked ? 'pointer' : 'default', opacity: isUnlocked ? 1 : 0.7 }}
+                onClick={() => handleOpen(letter)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  {/* Wax seal */}
+                  <div style={{
+                    width: 54, height: 54, borderRadius: '50%',
+                    background: `radial-gradient(circle at 40% 40%, ${letter.sealColor}, ${letter.sealColor}88)`,
+                    border: `2.5px solid ${letter.sealColor}`, boxShadow: `0 0 8px ${letter.sealColor}40`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.5rem', color: '#fff',
+                  }}>💌</div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem' }}>{letter.title}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      {fromUser?.emoji} {fromUser?.name} ·
+                      {isUnlocked ? (letter.isOpened ? ' 已打开' : ' ✨ 可打开') : ` 还有 ${Math.ceil((new Date(letter.unlockAt).getTime() - now) / 86400000)} 天`}
+                    </div>
+                  </div>
+                  {!isUnlocked && <span style={{ fontSize: '1.3rem' }}>🔒</span>}
+                  {isUnlocked && !letter.isOpened && <span style={{ fontSize: '1.3rem', animation: 'pulse 1.5s ease-in-out infinite' }}>✨</span>}
+                </div>
+
+                <AnimatePresence>
+                  {isOpened && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                      style={{ marginTop: 14, padding: 14, background: letter.sealColor + '08', borderRadius: '14px', fontFamily: 'var(--font-body)', fontSize: '0.9rem', lineHeight: 1.8, whiteSpace: 'pre-wrap', borderTop: `1px solid ${letter.sealColor}20` }}>
+                      {letter.content}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })
         )}
       </div>
     </div>
