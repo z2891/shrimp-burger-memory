@@ -5,7 +5,7 @@ import MemoryPopup from './MemoryPopup.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { MOOD_STAMPS } from '../../utils/constants.js';
 
-export default function TimeMap({ memories, onAddMemory }) {
+export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteMemory }) {
   const { user } = useAuth();
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -222,6 +222,8 @@ export default function TimeMap({ memories, onAddMemory }) {
         {selectedMemory && (
           <MemoryPopup
             memory={selectedMemory}
+            onEdit={onEditMemory}
+            onDelete={onDeleteMemory}
             onClose={() => setSelectedMemory(null)}
           />
         )}

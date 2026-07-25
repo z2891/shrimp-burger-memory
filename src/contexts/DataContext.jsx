@@ -83,6 +83,8 @@ export function DataProvider({ children }) {
   const deleteCountdown = useCallback((id) => remove('countdowns', id), [remove]);
 
   const addFirst = useCallback((f) => add('firsts', f), [add]);
+  const updateFirst = useCallback((id, updates) => update('firsts', id, updates), [update]);
+  const deleteFirst = useCallback((id) => remove('firsts', id), [remove]);
   const addMailboxLetter = useCallback((letter) => add('mailbox', letter), [add]);
 
   const value = {
@@ -98,7 +100,7 @@ export function DataProvider({ children }) {
     addExpression,
     submitQuizAnswer, addQuiz,
     addCountdown, deleteCountdown,
-    addFirst, addMailboxLetter,
+    addFirst, updateFirst, deleteFirst, addMailboxLetter,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -3,14 +3,19 @@ import { useData } from '../contexts/DataContext.jsx';
 import { generateId } from '../utils/storage.js';
 
 export default function HomePage() {
-  const { data, addMemory } = useData();
+  const { data, addMemory, updateMemory, deleteMemory } = useData();
   const memories = data.memories || [];
 
   const handleAddMemory = (memoryData) => {
-    addMemory({
-      id: generateId(),
-      ...memoryData,
-    });
+    addMemory({ id: generateId(), ...memoryData });
+  };
+
+  const handleEditMemory = (id, updates) => {
+    updateMemory(id, updates);
+  };
+
+  const handleDeleteMemory = (id) => {
+    deleteMemory(id);
   };
 
   return (
@@ -18,6 +23,8 @@ export default function HomePage() {
       <TimeMap
         memories={memories}
         onAddMemory={handleAddMemory}
+        onEditMemory={handleEditMemory}
+        onDeleteMemory={handleDeleteMemory}
       />
     </div>
   );

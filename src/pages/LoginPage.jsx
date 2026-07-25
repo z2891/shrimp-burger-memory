@@ -1,17 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [openingDoor, setOpeningDoor] = useState(null);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
+
+  // Navigate only AFTER auth state confirms authenticated
+  useEffect(() => {
+    if (shouldNavigate && isAuthenticated) {
+      const timer = setTimeout(() => navigate('/'), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldNavigate, isAuthenticated, navigate]);
 
   const handleEnter = (username) => {
     setOpeningDoor(username);
     login(username);
-    setTimeout(() => navigate('/'), 1200);
+    // Wait for React to process the login, then trigger navigate via useEffect
+    setTimeout(() => setShouldNavigate(true), 100);
   };
 
   return (
@@ -94,7 +104,6 @@ export default function LoginPage() {
             boxShadow: '0 8px 32px rgba(255, 107, 107, 0.3)',
           }}
         >
-          {/* Door glow */}
           <div style={{
             position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)',
             width: 60, height: 60, borderRadius: '50%',
