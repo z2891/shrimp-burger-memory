@@ -1,18 +1,18 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { getAll, addItem, updateItem, deleteItem, generateId } from '../utils/storage.js';
+import { supabase } from '../lib/supabase.js';
 
 const DataContext = createContext(null);
 
-const KEYS = {
-  memories: 'memories',
-  diary: 'diary',
-  letters: 'letters',
-  vouchers: 'vouchers',
-  expressions: 'expressions',
-  quiz: 'quiz',
-  countdowns: 'countdowns',
-  firsts: 'firsts',
-  mailbox: 'mailbox',
+const TABLES = {
+  memories: 'couple_memories',
+  diary: 'couple_diary',
+  letters: 'couple_letters',
+  vouchers: 'couple_vouchers',
+  expressions: 'couple_expressions',
+  quiz: 'couple_quiz',
+  countdowns: 'couple_countdowns',
+  firsts: 'couple_firsts',
+  mailbox: 'couple_mailbox',
 };
 
 export function DataProvider({ children }) {
@@ -26,78 +26,106 @@ export function DataProvider({ children }) {
 
   async function loadAll() {
     setLoading(true);
-    const keys = Object.keys(KEYS);
-    const results = await Promise.all(keys.map(k => getAll(KEYS[k]).catch(() => [])));
-    const all = {};
-    keys.forEach((k, i) => { all[k] = results[i] || []; });
-    setData(all);
+    const keys = Object.keys(TABLES);
+    try {
+      const results = await Promise.all(
+        keys.map(k =>
+          supabase.from(TABLES[k]).select('*').order('date', { ascending: false })
+            .then(({ data: rows, error }) => (error ? [] : rows || []))
+            .catch(() => [])
+        )
+      );
+      const all = {};
+      keys.forEach((k, i) => { all[k] = results[i] || []; });
+      setData(all);
+    } catch { /* ignore */ }
     setLoading(false);
   }
 
-  const refresh = useCallback(async (key) => {
-    const items = await getAll(KEYS[key]).catch(() => []);
-    setData(prev => ({ ...prev, [key]: items }));
-  }, []);
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+  }
 
-  // Generic CRUD (async)
+  // Optimistic CRUD — update local state immediately, sync to Supabase in background
   const add = useCallback(async (key, item) => {
     const newItem = { ...item, id: item.id || generateId() };
-    await addItem(KEYS[key], newItem);
-    await refresh(key);
+    // Optimistic: add to local state immediately
+    setData(prev => ({ ...prev, [key]: [...(prev[key] || []), newItem] }));
+    // Sync to Supabase
+    supabase.from(TABLES[key]).insert(newItem).then(({ error }) => {
+      if (error) console.warn(`Supabase insert ${key}:`, error);
+    });
     return newItem;
-  }, [refresh]);
+  }, []);
 
   const update = useCallback(async (key, id, updates) => {
-    await updateItem(KEYS[key], id, updates);
-    await refresh(key);
-  }, [refresh]);
+    // Optimistic: update local state immediately
+    setData(prev => ({
+      ...prev,
+      [key]: (prev[key] || []).map(item => item.id === id ? { ...item, ...updates } : item),
+    }));
+    // Sync to Supabase
+    supabase.from(TABLES[key]).update(updates).eq('id', id).then(({ error }) => {
+      if (error) console.warn(`Supabase update ${key}:`, error);
+    });
+  }, []);
 
   const remove = useCallback(async (key, id) => {
-    await deleteItem(KEYS[key], id);
-    await refresh(key);
-  }, [refresh]);
+    // Optimistic: remove from local state immediately
+    setData(prev => ({
+      ...prev,
+      [key]: (prev[key] || []).filter(item => item.id !== id),
+    }));
+    // Sync to Supabase
+    supabase.from(TABLES[key]).delete().eq('id', id).then(({ error }) => {
+      if (error) console.warn(`Supabase delete ${key}:`, error);
+    });
+  }, []);
 
-  // Specialized operations
-  const addMemory = useCallback((memory) => add('memories', memory), [add]);
-  const updateMemory = useCallback((id, updates) => update('memories', id, updates), [update]);
+  // --- Specialized operations (all column names match SQL schema) ---
+  const addMemory = useCallback((m) => add('memories', m), [add]);
+  const updateMemory = useCallback((id, u) => update('memories', id, u), [update]);
   const deleteMemory = useCallback((id) => remove('memories', id), [remove]);
 
-  const addDiaryEntry = useCallback((entry) => add('diary', entry), [add]);
-  const updateDiaryEntry = useCallback((id, updates) => update('diary', id, updates), [update]);
+  const addDiaryEntry = useCallback((e) => add('diary', e), [add]);
+  const updateDiaryEntry = useCallback((id, u) => update('diary', id, u), [update]);
 
-  const addLetter = useCallback((letter) => add('letters', letter), [add]);
-  const openLetter = useCallback((id) => update('letters', id, { is_opened: true }), [update]);
+  const addLetter = useCallback((l) => add('letters', l), [add]);
+  const openLetter = useCallback((id) => update('letters', id, { isOpened: true }), [update]);
 
   const addVoucher = useCallback((v) => add('vouchers', v), [add]);
-  const redeemVoucher = useCallback((id) => update('vouchers', id, { is_redeemed: true, redeemed_at: Date.now() }), [update]);
+  const redeemVoucher = useCallback((id) => update('vouchers', id, { isRedeemed: true, redeemedAt: Date.now() }), [update]);
 
-  const addExpression = useCallback((expr) => add('expressions', expr), [add]);
+  const addExpression = useCallback((e) => add('expressions', e), [add]);
 
   const submitQuizAnswer = useCallback(async (quizId, username, content) => {
-    const quiz = data.quiz?.find(q => q.id === quizId);
-    if (!quiz) return;
-    const answers = { ...quiz.answers, [username]: { content, submittedAt: Date.now() } };
-    const revealed = answers['xia-mi']?.content && answers['han-bao']?.content;
-    await update('quiz', quizId, { answers, revealed });
-  }, [data.quiz, update]);
+    setData(prev => {
+      const quizList = [...(prev.quiz || [])];
+      const idx = quizList.findIndex(q => q.id === quizId);
+      if (idx === -1) return prev;
+      const quiz = { ...quizList[idx] };
+      quiz.answers = { ...quiz.answers, [username]: { content, submittedAt: Date.now() } };
+      quiz.revealed = quiz.answers['xia-mi']?.content && quiz.answers['han-bao']?.content;
+      quizList[idx] = quiz;
+      // Sync
+      supabase.from('couple_quiz').update({ answers: quiz.answers, revealed: quiz.revealed }).eq('id', quizId);
+      return { ...prev, quiz: quizList };
+    });
+  }, []);
 
   const addQuiz = useCallback((q) => add('quiz', q), [add]);
 
-  const addCountdown = useCallback((cd) => add('countdowns', cd), [add]);
+  const addCountdown = useCallback((c) => add('countdowns', c), [add]);
   const deleteCountdown = useCallback((id) => remove('countdowns', id), [remove]);
 
   const addFirst = useCallback((f) => add('firsts', f), [add]);
-  const updateFirst = useCallback((id, updates) => update('firsts', id, updates), [update]);
+  const updateFirst = useCallback((id, u) => update('firsts', id, u), [update]);
   const deleteFirst = useCallback((id) => remove('firsts', id), [remove]);
-  const addMailboxLetter = useCallback((letter) => add('mailbox', letter), [add]);
+  const addMailboxLetter = useCallback((l) => add('mailbox', l), [add]);
 
   const value = {
-    data,
-    loading,
-    loadAll,
-    // Generic
+    data, loading, loadAll,
     add, update, remove,
-    // Specialized
     addMemory, updateMemory, deleteMemory,
     addDiaryEntry, updateDiaryEntry,
     addLetter, openLetter,
