@@ -14,12 +14,14 @@ export default function Layout() {
   return (
     <div style={{
       minHeight: '100dvh', paddingBottom: '80px',
-      maxWidth: '480px', margin: '0 auto', width: '100%', position: 'relative',
+      maxWidth: '960px', margin: '0 auto', width: '100%', position: 'relative',
+      paddingLeft: 'max(16px, env(safe-area-inset-left))',
+      paddingRight: 'max(16px, env(safe-area-inset-right))',
     }}>
       {/* Top gradient bar */}
       <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: 480, height: 50, zIndex: 50, pointerEvents: 'none',
+        width: '100%', maxWidth: 960, height: 50, zIndex: 50, pointerEvents: 'none',
         background: 'linear-gradient(180deg, var(--bg-primary) 60%, transparent)',
       }} />
 
@@ -36,7 +38,7 @@ export default function Layout() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            style={{ padding: '52px 16px 0', position: 'relative', zIndex: 1 }}
+            style={{ padding: '52px 0 0', position: 'relative', zIndex: 1 }}
           >
             <Outlet />
           </motion.div>

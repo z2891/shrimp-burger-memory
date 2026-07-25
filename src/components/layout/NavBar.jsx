@@ -40,7 +40,7 @@ export default function NavBar() {
         boxShadow: 'var(--shadow-popup)',
         display: 'flex', justifyContent: 'center', alignItems: 'center',
         padding: '6px 4px',
-        width: 'calc(100% - 32px)', maxWidth: 440,
+        width: 'calc(100% - 32px)', maxWidth: 600,
         gap: 2,
       }}>
         {NAV_ITEMS.map(item => (
@@ -109,7 +109,7 @@ export default function NavBar() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           style={{
             position: 'fixed', bottom: 90, left: 16, right: 16, zIndex: 99,
-            maxWidth: 440, margin: '0 auto',
+            maxWidth: 600, margin: '0 auto',
             background: 'var(--bg-card)', borderRadius: 'var(--radius-card)',
             border: '2px solid var(--border-color)', boxShadow: 'var(--shadow-popup)',
             padding: 16, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10,

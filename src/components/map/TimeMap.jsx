@@ -117,7 +117,7 @@ function WindingTimeline({ memories, user, onSelect }) {
   const svgHeight = Math.max(800, memories.length * 200 + 100);
 
   return (
-    <div style={{ position: 'relative', minHeight: svgHeight }}>
+    <div style={{ position: 'relative', minHeight: svgHeight, maxWidth: 700, margin: '0 auto' }}>
       {/* SVG winding path */}
       <svg
         viewBox={`0 0 400 ${svgHeight}`}
@@ -187,7 +187,7 @@ function WindingTimeline({ memories, user, onSelect }) {
               top: percentY + '%',
               left: isLeft ? '2%' : 'auto',
               right: isLeft ? 'auto' : '2%',
-              width: '46%',
+              width: 'clamp(180px, 46%, 320px)',
               cursor: 'pointer',
               zIndex: 2,
             }}

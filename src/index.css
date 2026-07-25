@@ -275,3 +275,8 @@ body::before {
   h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; }
   .modal-card { margin: 10px; max-height: 90vh; }
 }
+@media (min-width: 769px) {
+  h1 { font-size: 2.2rem; }
+  .modal-card { max-width: 480px; }
+  .hand-drawn-card { padding: var(--space-xl); }
+}
