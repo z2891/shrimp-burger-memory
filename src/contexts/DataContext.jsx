@@ -29,16 +29,24 @@ export function DataProvider({ children }) {
     const keys = Object.keys(TABLES);
     try {
       const results = await Promise.all(
-        keys.map(k =>
-          supabase.from(TABLES[k]).select('*').order('date', { ascending: false })
-            .then(({ data: rows, error }) => (error ? [] : rows || []))
-            .catch(() => [])
-        )
+        keys.map(k => {
+          let q = supabase.from(TABLES[k]).select('*');
+          // Only add order for tables that actually have a 'date' column
+          if (['couple_memories', 'couple_diary', 'couple_expressions', 'couple_firsts'].includes(TABLES[k])) {
+            q = q.order('date', { ascending: false });
+          } else if (TABLES[k] === 'couple_vouchers') {
+            q = q.order('createdAt', { ascending: false });
+          }
+          return q.then(({ data: rows, error }) => {
+            if (error) { console.warn(`Supabase loadAll ${k}:`, error.message); return []; }
+            return rows || [];
+          }).catch(e => { console.warn(`Supabase loadAll ${k} exception:`, e); return []; });
+        })
       );
       const all = {};
       keys.forEach((k, i) => { all[k] = results[i] || []; });
       setData(all);
-    } catch { /* ignore */ }
+    } catch (e) { console.warn('loadAll fatal:', e); }
     setLoading(false);
   }
 

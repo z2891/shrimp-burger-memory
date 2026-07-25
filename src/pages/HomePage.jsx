@@ -68,6 +68,17 @@ function MiniCalendar() {
     setEditing(null); setForm({ label: '', date: '' });
   };
 
+  // Calculate days until an MM-DD date (always returns days until next occurrence)
+  const daysUntil = (mmdd) => {
+    const [m, d] = mmdd.split('-').map(Number);
+    const n = new Date();
+    const target = new Date(n.getFullYear(), m-1, d);
+    if (target < new Date(n.getFullYear(), n.getMonth(), n.getDate())) {
+      target.setFullYear(target.getFullYear() + 1);
+    }
+    return Math.ceil((target - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 86400000);
+  };
+
   const handleDelete = (id) => {
     if (window.confirm('删除这个纪念日？')) setAnniversaries(p => p.filter(a => a.id !== id));
   };
@@ -81,15 +92,29 @@ function MiniCalendar() {
         <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
           📅 {MONTHS[month]}
         </span>
-        {sorted.slice(0, 3).map(a => (
-          <button key={a.id} onClick={() => openEdit(a)}
-            style={{
-              padding: '2px 8px', borderRadius: 'var(--radius-tag)', border: `1.5px solid ${a.forUser==='xia-mi'?'var(--shrimp-color)':a.forUser==='han-bao'?'var(--burger-color)':'var(--color-gold)'}40`,
-              background: a.forUser==='xia-mi'?'var(--shrimp-light)':a.forUser==='han-bao'?'var(--burger-light)':'var(--gradient-golden)',
-              cursor: 'pointer', fontSize: '0.66rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
-            }}
-          >{a.label}</button>
-        ))}
+        {sorted.map(a => {
+          const days = daysUntil(a.date);
+          return (
+            <button key={a.id} onClick={() => openEdit(a)}
+              style={{
+                padding: '2px 8px', borderRadius: 'var(--radius-tag)',
+                border: `1.5px solid ${a.forUser==='xia-mi'?'var(--shrimp-color)':a.forUser==='han-bao'?'var(--burger-color)':'var(--color-gold)'}50`,
+                background: a.forUser==='xia-mi'?'var(--shrimp-light)':a.forUser==='han-bao'?'var(--burger-light)':'var(--gradient-golden)',
+                cursor: 'pointer', fontSize: '0.66rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <span>{a.label}</span>
+              {days > 0 && days <= 60 && (
+                <span style={{
+                  fontSize: '0.55rem', background: 'rgba(0,0,0,0.06)',
+                  padding: '1px 5px', borderRadius: 20, whiteSpace: 'nowrap',
+                }}>距{days}天</span>
+              )}
+              {days === 0 && <span style={{fontSize:'0.6rem'}}>🎉</span>}
+            </button>
+          );
+        })}
         <button onClick={openNew} style={{ fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-muted)', padding: '0 2px' }}>➕</button>
         <button onClick={() => setExpanded(!expanded)}
           style={{ fontSize: '0.66rem', cursor: 'pointer', color: 'var(--text-muted)', marginLeft: 'auto', padding: '2px 4px', fontFamily: 'var(--font-body)' }}>
