@@ -1,87 +1,80 @@
 // ============================================
-// localStorage abstraction layer
-// Designed for easy migration to Supabase
+// Supabase storage layer
 // ============================================
+import { supabase } from '../lib/supabase.js';
 
-const STORAGE_PREFIX = 'couple_';
+const TABLE_MAP = {
+  memories: 'couple_memories',
+  diary: 'couple_diary',
+  letters: 'couple_letters',
+  vouchers: 'couple_vouchers',
+  expressions: 'couple_expressions',
+  quiz: 'couple_quiz',
+  countdowns: 'couple_countdowns',
+  firsts: 'couple_firsts',
+  mailbox: 'couple_mailbox',
+};
 
-function getKey(key) {
-  return STORAGE_PREFIX + key;
-}
-
-export function getItem(key, defaultValue = null) {
+export async function getItem(key, defaultValue = null) {
+  // Only used for auth/auth_session — still localStorage
   try {
-    const raw = localStorage.getItem(getKey(key));
+    const raw = localStorage.getItem('couple_' + key);
     if (raw === null) return defaultValue;
     return JSON.parse(raw);
-  } catch {
-    return defaultValue;
-  }
+  } catch { return defaultValue; }
 }
 
 export function setItem(key, value) {
+  // Only used for auth/auth_session — still localStorage
   try {
-    localStorage.setItem(getKey(key), JSON.stringify(value));
+    localStorage.setItem('couple_' + key, JSON.stringify(value));
     return true;
-  } catch (e) {
-    console.warn('localStorage full or unavailable:', e);
-    return false;
-  }
+  } catch { return false; }
 }
 
 export function removeItem(key) {
-  localStorage.removeItem(getKey(key));
+  localStorage.removeItem('couple_' + key);
 }
 
-// --- Generic CRUD helpers ---
-export function getAll(collectionKey) {
-  return getItem(collectionKey, []);
+// --- Supabase CRUD ---
+export async function getAll(collectionKey) {
+  const table = TABLE_MAP[collectionKey];
+  if (!table) return [];
+  const { data, error } = await supabase.from(table).select('*').order('date', { ascending: false });
+  if (error) { console.warn('Supabase getAll error:', error); return []; }
+  return data || [];
 }
 
-export function getById(collectionKey, id) {
-  const items = getAll(collectionKey);
-  return items.find(item => item.id === id) || null;
-}
-
-export function addItem(collectionKey, item) {
-  const items = getAll(collectionKey);
-  items.push(item);
-  setItem(collectionKey, items);
-  return item;
-}
-
-export function updateItem(collectionKey, id, updates) {
-  const items = getAll(collectionKey);
-  const index = items.findIndex(item => item.id === id);
-  if (index === -1) return null;
-  items[index] = { ...items[index], ...updates };
-  setItem(collectionKey, items);
-  return items[index];
-}
-
-export function deleteItem(collectionKey, id) {
-  const items = getAll(collectionKey);
-  const filtered = items.filter(item => item.id !== id);
-  setItem(collectionKey, filtered);
-  return filtered;
-}
-
-// --- Export/Import for migration ---
-export function exportAll() {
-  const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key.startsWith(STORAGE_PREFIX)) {
-      data[key] = JSON.parse(localStorage.getItem(key));
-    }
-  }
+export async function getById(collectionKey, id) {
+  const table = TABLE_MAP[collectionKey];
+  if (!table) return null;
+  const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
+  if (error) return null;
   return data;
 }
 
-export function importAll(data) {
-  Object.entries(data).forEach(([key, value]) => {
-    localStorage.setItem(key, JSON.stringify(value));
-  });
+export async function addItem(collectionKey, item) {
+  const table = TABLE_MAP[collectionKey];
+  if (!table) return null;
+  const { error } = await supabase.from(table).insert(item);
+  if (error) { console.warn('Supabase insert error:', error); return null; }
+  return item;
+}
+
+export async function updateItem(collectionKey, id, updates) {
+  const table = TABLE_MAP[collectionKey];
+  if (!table) return null;
+  const { error } = await supabase.from(table).update(updates).eq('id', id);
+  if (error) { console.warn('Supabase update error:', error); return null; }
+  return { id, ...updates };
+}
+
+export async function deleteItem(collectionKey, id) {
+  const table = TABLE_MAP[collectionKey];
+  if (!table) return [];
+  const { error } = await supabase.from(table).delete().eq('id', id);
+  if (error) { console.warn('Supabase delete error:', error); }
+  return [];
 }
 
 // --- Generate ID ---

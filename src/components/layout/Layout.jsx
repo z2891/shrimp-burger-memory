@@ -2,12 +2,14 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import NavBar from './NavBar.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useData } from '../../contexts/DataContext.jsx';
 import ConfettiOverlay from '../common/ConfettiOverlay.jsx';
 import ErrorBoundary from '../common/ErrorBoundary.jsx';
 
 export default function Layout() {
   const location = useLocation();
   const { isAnniversary, dismissAnniversary } = useAuth();
+  const { loading: dataLoading } = useData();
 
   return (
     <div style={{
@@ -23,17 +25,29 @@ export default function Layout() {
 
       <FloatingHearts />
 
-      <ErrorBoundary key={location.pathname}>
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.25 }}
-          style={{ padding: '0 16px', position: 'relative', zIndex: 1 }}
-        >
-          <Outlet />
-        </motion.div>
-      </ErrorBoundary>
+      {dataLoading && (
+        <div style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+          zIndex: 50, textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '2rem', animation: 'pulse 1.5s ease-in-out infinite' }}>💕</div>
+          <p style={{ fontFamily: 'var(--font-body)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>加载中...</p>
+        </div>
+      )}
+
+      {!dataLoading && (
+        <ErrorBoundary key={location.pathname}>
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            style={{ padding: '0 16px', position: 'relative', zIndex: 1 }}
+          >
+            <Outlet />
+          </motion.div>
+        </ErrorBoundary>
+      )}
 
       <NavBar />
     </div>

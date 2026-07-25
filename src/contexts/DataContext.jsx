@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getAll, addItem, updateItem, deleteItem, generateId } from '../utils/storage.js';
-import { initializeMockData } from '../data/mockMemories.js';
 
 const DataContext = createContext(null);
 
@@ -18,39 +17,44 @@ const KEYS = {
 
 export function DataProvider({ children }) {
   const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // Initialize and load all data
+  // Load all data from Supabase on mount
   useEffect(() => {
-    initializeMockData();
     loadAll();
   }, []);
 
-  function loadAll() {
+  async function loadAll() {
+    setLoading(true);
+    const keys = Object.keys(KEYS);
+    const results = await Promise.all(keys.map(k => getAll(KEYS[k]).catch(() => [])));
     const all = {};
-    Object.keys(KEYS).forEach(k => { all[k] = getAll(KEYS[k]); });
+    keys.forEach((k, i) => { all[k] = results[i] || []; });
     setData(all);
+    setLoading(false);
   }
 
-  const refresh = useCallback((key) => {
-    setData(prev => ({ ...prev, [key]: getAll(KEYS[key]) }));
+  const refresh = useCallback(async (key) => {
+    const items = await getAll(KEYS[key]).catch(() => []);
+    setData(prev => ({ ...prev, [key]: items }));
   }, []);
 
-  // Generic CRUD
-  const add = useCallback((key, item) => {
+  // Generic CRUD (async)
+  const add = useCallback(async (key, item) => {
     const newItem = { ...item, id: item.id || generateId() };
-    addItem(KEYS[key], newItem);
-    refresh(key);
+    await addItem(KEYS[key], newItem);
+    await refresh(key);
     return newItem;
   }, [refresh]);
 
-  const update = useCallback((key, id, updates) => {
-    updateItem(KEYS[key], id, updates);
-    refresh(key);
+  const update = useCallback(async (key, id, updates) => {
+    await updateItem(KEYS[key], id, updates);
+    await refresh(key);
   }, [refresh]);
 
-  const remove = useCallback((key, id) => {
-    deleteItem(KEYS[key], id);
-    refresh(key);
+  const remove = useCallback(async (key, id) => {
+    await deleteItem(KEYS[key], id);
+    await refresh(key);
   }, [refresh]);
 
   // Specialized operations
@@ -62,19 +66,19 @@ export function DataProvider({ children }) {
   const updateDiaryEntry = useCallback((id, updates) => update('diary', id, updates), [update]);
 
   const addLetter = useCallback((letter) => add('letters', letter), [add]);
-  const openLetter = useCallback((id) => update('letters', id, { isOpened: true }), [update]);
+  const openLetter = useCallback((id) => update('letters', id, { is_opened: true }), [update]);
 
   const addVoucher = useCallback((v) => add('vouchers', v), [add]);
-  const redeemVoucher = useCallback((id) => update('vouchers', id, { isRedeemed: true, redeemedAt: Date.now() }), [update]);
+  const redeemVoucher = useCallback((id) => update('vouchers', id, { is_redeemed: true, redeemed_at: Date.now() }), [update]);
 
   const addExpression = useCallback((expr) => add('expressions', expr), [add]);
 
-  const submitQuizAnswer = useCallback((quizId, username, content) => {
+  const submitQuizAnswer = useCallback(async (quizId, username, content) => {
     const quiz = data.quiz?.find(q => q.id === quizId);
     if (!quiz) return;
     const answers = { ...quiz.answers, [username]: { content, submittedAt: Date.now() } };
     const revealed = answers['xia-mi']?.content && answers['han-bao']?.content;
-    update('quiz', quizId, { answers, revealed });
+    await update('quiz', quizId, { answers, revealed });
   }, [data.quiz, update]);
 
   const addQuiz = useCallback((q) => add('quiz', q), [add]);
@@ -89,6 +93,7 @@ export function DataProvider({ children }) {
 
   const value = {
     data,
+    loading,
     loadAll,
     // Generic
     add, update, remove,
