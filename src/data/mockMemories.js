@@ -1,4 +1,4 @@
-import { generateId } from '../utils/storage.js';
+import { generateId, getItem, setItem } from '../utils/storage.js';
 
 export function createMockData() {
   const now = new Date();
@@ -112,41 +112,28 @@ export function createMockData() {
 
 // Initialize mock data if first visit
 export function initializeMockData() {
-  const STORAGE_KEYS = {
-    AUTH: 'couple_auth',
-    MEMORIES: 'couple_memories',
-    DIARY: 'couple_diary',
-    LETTERS: 'couple_letters',
-    VOUCHERS: 'couple_vouchers',
-    EXPRESSIONS: 'couple_expressions',
-    QUIZ: 'couple_quiz',
-    COUNTDOWNS: 'couple_countdowns',
-    FIRSTS: 'couple_firsts',
-    MAILBOX: 'couple_mailbox',
-  };
-
-  const CURRENT_VERSION = 'v3';
-  if (localStorage.getItem('couple_version') === CURRENT_VERSION) return;
+  const CURRENT_VERSION = 'v4';
+  if (getItem('version') === CURRENT_VERSION) return;
 
   const mock = createMockData();
 
-  // Set up user identities (no password — just click the door to enter)
-  localStorage.setItem('couple_auth', JSON.stringify({
+  // Use storage.js setItem so keys have consistent 'couple_' prefix
+  setItem('auth', {
     users: {
       'xia-mi': { name: '虾米', emoji: '🦐', color: '#FF6B6B' },
       'han-bao': { name: '汉堡', emoji: '🍔', color: '#FFB347' },
     }
-  }));
+  });
 
-  localStorage.setItem('couple_memories', JSON.stringify(mock.memories));
-  localStorage.setItem('couple_diary', JSON.stringify(mock.diary));
-  localStorage.setItem('couple_letters', JSON.stringify(mock.letters));
-  localStorage.setItem('couple_vouchers', JSON.stringify(mock.vouchers));
-  localStorage.setItem('couple_expressions', JSON.stringify(mock.expressions));
-  localStorage.setItem('couple_quiz', JSON.stringify(mock.quiz));
-  localStorage.setItem('couple_countdowns', JSON.stringify(mock.countdowns));
-  localStorage.setItem('couple_firsts', JSON.stringify(mock.firsts));
-  localStorage.setItem('couple_mailbox', JSON.stringify([]));
+  setItem('memories', mock.memories);
+  setItem('diary', mock.diary);
+  setItem('letters', mock.letters);
+  setItem('vouchers', mock.vouchers);
+  setItem('expressions', mock.expressions);
+  setItem('quiz', mock.quiz);
+  setItem('countdowns', mock.countdowns);
+  setItem('firsts', mock.firsts);
+  setItem('mailbox', []);
 
-  localStorage.setItem('couple_version', CURRENT_VERSION);
+  setItem('version', CURRENT_VERSION);
 }

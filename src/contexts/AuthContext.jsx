@@ -10,10 +10,10 @@ export function AuthProvider({ children }) {
 
   // Check existing session on mount
   useEffect(() => {
-    const saved = getItem('couple_auth_session');
+    const saved = getItem('auth_session');
     if (saved && saved.username) {
-      const users = getItem('couple_auth', { users: {} });
-      const userData = users.users?.[saved.username];
+      const authData = getItem('auth', { users: {} });
+      const userData = authData.users?.[saved.username];
       if (userData) {
         setUser({ username: saved.username, ...userData });
         setIsAuthenticated(true);
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
   }
 
   const login = useCallback((username) => {
-    const authData = getItem('couple_auth', { users: {} });
+    const authData = getItem('auth', { users: {} });
     let userData = authData.users?.[username];
 
     // Auto-create user if first time or data was wiped
@@ -44,11 +44,11 @@ export function AuthProvider({ children }) {
         userData = { name: '汉堡', emoji: '🍔', color: '#FFB347' };
       }
       authData.users = { ...authData.users, [username]: userData };
-      setItem('couple_auth', authData);
+      setItem('auth', authData);
     }
 
     const session = { username, loggedInAt: new Date().toISOString() };
-    setItem('couple_auth_session', session);
+    setItem('auth_session', session);
     setUser({ username, ...userData });
     setIsAuthenticated(true);
     checkAnniversary();
@@ -56,7 +56,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
-    removeItem('couple_auth_session');
+    removeItem('auth_session');
     setUser(null);
     setIsAuthenticated(false);
     setIsAnniversary(false);
