@@ -90,28 +90,33 @@ function MiniCalendar() {
       {/* COMPACT STRIP */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.82rem', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
-          📅 {MONTHS[month]}
+          📅 特殊日子
         </span>
         {sorted.map(a => {
           const days = daysUntil(a.date);
           return (
             <button key={a.id} onClick={() => openEdit(a)}
               style={{
-                padding: '2px 8px', borderRadius: 'var(--radius-tag)',
+                padding: '3px 10px', borderRadius: 'var(--radius-tag)',
                 border: `1.5px solid ${a.forUser==='xia-mi'?'var(--shrimp-color)':a.forUser==='han-bao'?'var(--burger-color)':'var(--color-gold)'}50`,
                 background: a.forUser==='xia-mi'?'var(--shrimp-light)':a.forUser==='han-bao'?'var(--burger-light)':'var(--gradient-golden)',
-                cursor: 'pointer', fontSize: '0.66rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
-                display: 'inline-flex', alignItems: 'center', gap: 4,
+                cursor: 'pointer', fontSize: '0.7rem', fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                display: 'inline-flex', alignItems: 'center', gap: 5,
               }}
             >
               <span>{a.label}</span>
-              {days > 0 && days <= 60 && (
+              <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>{a.date}</span>
+              {days === 0 ? (
+                <span style={{ fontSize: '0.65rem' }}>🎉</span>
+              ) : (
                 <span style={{
-                  fontSize: '0.55rem', background: 'rgba(0,0,0,0.06)',
-                  padding: '1px 5px', borderRadius: 20, whiteSpace: 'nowrap',
-                }}>距{days}天</span>
+                  fontSize: '0.56rem', background: 'rgba(0,0,0,0.06)',
+                  padding: '1px 6px', borderRadius: 20, whiteSpace: 'nowrap',
+                  color: days <= 30 ? 'var(--coral)' : 'var(--text-muted)',
+                }}>
+                  还有{days}天
+                </span>
               )}
-              {days === 0 && <span style={{fontSize:'0.6rem'}}>🎉</span>}
             </button>
           );
         })}
