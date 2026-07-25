@@ -5,15 +5,15 @@ import { initializeMockData } from '../data/mockMemories.js';
 const DataContext = createContext(null);
 
 const KEYS = {
-  memories: 'couple_memories',
-  diary: 'couple_diary',
-  letters: 'couple_letters',
-  vouchers: 'couple_vouchers',
-  expressions: 'couple_expressions',
-  quiz: 'couple_quiz',
-  countdowns: 'couple_countdowns',
-  firsts: 'couple_firsts',
-  mailbox: 'couple_mailbox',
+  memories: 'memories',
+  diary: 'diary',
+  letters: 'letters',
+  vouchers: 'vouchers',
+  expressions: 'expressions',
+  quiz: 'quiz',
+  countdowns: 'countdowns',
+  firsts: 'firsts',
+  mailbox: 'mailbox',
 };
 
 export function DataProvider({ children }) {

@@ -1,9 +1,20 @@
 import { motion } from 'framer-motion';
 import MoodStamp from '../common/MoodStamp.jsx';
-import { USERS } from '../../utils/constants.js';
+import { USERS, MOOD_STAMPS } from '../../utils/constants.js';
+
+function getMoodId(memory) {
+  // Try by exact id match first
+  if (MOOD_STAMPS.find(s => s.id === memory.mood)) return memory.mood;
+  // Try by label match
+  const byLabel = MOOD_STAMPS.find(s => s.label === memory.mood);
+  if (byLabel) return byLabel.id;
+  // Fallback
+  return 'happy-bubble';
+}
 
 export default function MemoryPopup({ memory, onClose }) {
   const creator = USERS[memory.createdBy] || { name: '神秘人', emoji: '❓', color: '#ccc' };
+  const hasImage = memory.mediaUrl && memory.mediaUrl.startsWith('data:');
 
   return (
     <motion.div
@@ -28,17 +39,30 @@ export default function MemoryPopup({ memory, onClose }) {
       >
         {/* Badge for firsts */}
         {memory.isFirst && (
-          <div style={{
-            textAlign: 'center', fontSize: '2.5rem', marginBottom: 8,
-          }}>
+          <div style={{ textAlign: 'center', fontSize: '2.5rem', marginBottom: 8 }}>
             {memory.badge || '⭐'}
+          </div>
+        )}
+
+        {/* Photo image */}
+        {hasImage && (
+          <div style={{ marginBottom: 12, textAlign: 'center' }}>
+            <img
+              src={memory.mediaUrl}
+              alt={memory.title}
+              style={{
+                maxWidth: '100%', maxHeight: 200,
+                borderRadius: '12px',
+                border: '2px solid var(--border-color)',
+              }}
+            />
           </div>
         )}
 
         {/* Type tag */}
         <div style={{ marginBottom: 12 }}>
           <span style={{
-            background: creator.lightColor || creator.color + '22',
+            background: (creator.lightColor || creator.color + '22'),
             color: creator.color,
             padding: '2px 12px', borderRadius: 'var(--radius-tag)',
             fontSize: '0.8rem', fontFamily: 'var(--font-body)',
@@ -52,13 +76,15 @@ export default function MemoryPopup({ memory, onClose }) {
           {memory.title}
         </h3>
 
-        <p style={{
-          fontFamily: 'var(--font-body)', fontSize: '0.95rem',
-          color: 'var(--text-secondary)', lineHeight: 1.8,
-          marginBottom: 16, whiteSpace: 'pre-wrap',
-        }}>
-          {memory.description}
-        </p>
+        {memory.description && (
+          <p style={{
+            fontFamily: 'var(--font-body)', fontSize: '0.95rem',
+            color: 'var(--text-secondary)', lineHeight: 1.8,
+            marginBottom: 16, whiteSpace: 'pre-wrap',
+          }}>
+            {memory.description}
+          </p>
+        )}
 
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -70,20 +96,7 @@ export default function MemoryPopup({ memory, onClose }) {
               {creator.name} · {memory.date}
             </span>
           </div>
-          {memory.mood && (
-            <MoodStamp moodId={
-              memory.mood === '开心到冒泡' ? 'happy-bubble' :
-              memory.mood === '被投喂中' ? 'fed' :
-              memory.mood === '有点想你' ? 'miss-you' :
-              memory.mood === '超爱你' ? 'love' :
-              memory.mood === '暖暖的' ? 'cozy' :
-              memory.mood === '一起犯傻' ? 'silly' :
-              memory.mood === '冒险日' ? 'adventure' :
-              memory.mood === '好幸运有你' ? 'grateful' :
-              memory.mood === '下雨天想你' ? 'rainy' :
-              memory.mood === '期待见面' ? 'excited' : 'happy-bubble'
-            } size="small" />
-          )}
+          {memory.mood && <MoodStamp moodId={getMoodId(memory)} size="small" />}
         </div>
       </motion.div>
     </motion.div>

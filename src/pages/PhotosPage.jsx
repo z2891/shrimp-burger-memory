@@ -77,7 +77,14 @@ export default function PhotosPage() {
             {memories.slice(0, 5).map(m => (
               <div key={m.id} className="hand-drawn-card" style={{ padding: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: '1.5rem' }}>📸</span>
+                  {m.mediaUrl && m.mediaUrl.startsWith('data:') ? (
+                    <img src={m.mediaUrl} alt={m.title} style={{
+                      width: 50, height: 50, borderRadius: 8,
+                      objectFit: 'cover', border: '1px solid var(--border-color)',
+                    }} />
+                  ) : (
+                    <span style={{ fontSize: '1.5rem' }}>📸</span>
+                  )}
                   <div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem' }}>{m.title}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.date}</div>
