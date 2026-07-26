@@ -274,9 +274,14 @@ body::before {
   :root { --space-lg: 16px; --space-xl: 24px; --space-2xl: 32px; }
   h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; }
   .modal-card { margin: 10px; max-height: 90vh; }
+  .desktop-only { display: none !important; }
 }
 @media (min-width: 769px) {
   h1 { font-size: 2.2rem; }
   .modal-card { max-width: 480px; }
   .hand-drawn-card { padding: var(--space-xl); }
+  .mobile-only { display: none !important; }
+  .home-grid { display: flex; gap: 20px; }
+  .home-main { flex: 1; min-width: 0; }
+  .home-sidebar { width: 240px; flex-shrink: 0; display: block; }
 }
