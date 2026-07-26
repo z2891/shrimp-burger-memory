@@ -23,4 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 .env.deploy
+<<<<<<< HEAD
 .env.deploy
+=======
+<<<<<<< HEAD
+=======
+.env.deploy
+>>>>>>> 35ef619 (feat: hanging countdown banners on both sides with live seconds)
+>>>>>>> 15b11e7
