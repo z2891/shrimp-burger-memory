@@ -53,10 +53,10 @@ function HangingBanners({ countdowns, side }) {
   return (
     <div style={{
       position: 'fixed',
-      [side]: 'max(8px, calc((100vw - 960px) / 2 + 8px))',
+      [side]: 'max(16px, calc((100vw - 960px) / 2 - 180px))',
       top: 80,
       bottom: 100,
-      width: 160,
+      width: 170,
       zIndex: 5,
       pointerEvents: 'none',
       display: 'flex',
