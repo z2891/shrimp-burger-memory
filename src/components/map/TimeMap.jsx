@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import MemoryPopup from './MemoryPopup.jsx';
@@ -100,7 +100,7 @@ export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteM
           <button className="hand-drawn-btn primary" onClick={() => setShowAddForm(true)}>✨ 创建第一条回忆</button>
         </div>
       ) : (
-        <WindingTimeline memories={filtered} countdowns={countdowns || []} user={user} onSelect={setSelectedMemory} />
+        <WindingTimeline memories={filtered} user={user} onSelect={setSelectedMemory} />
       )}
 
       <AnimatePresence>
@@ -111,20 +111,8 @@ export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteM
 }
 
 /** ===== WINDING S-CURVE TIMELINE ===== */
-function WindingTimeline({ memories, countdowns, user, onSelect }) {
-  // Interleave memory cards with countdown ornaments
-  // Memories carry the timeline, countdowns are smaller cards woven between them
-  const cdArr = countdowns || [];
-  const totalItems = memories.length + cdArr.length;
-  const svgHeight = Math.max(800, totalItems * 170 + 200);
-
-  // Build interleaved list: memory, countdown, memory, countdown...
-  const items = [];
-  let mi = 0, ci = 0;
-  while (mi < memories.length || ci < cdArr.length) {
-    if (mi < memories.length) { items.push({ type: 'memory', data: memories[mi], idx: mi }); mi++; }
-    if (ci < cdArr.length) { items.push({ type: 'countdown', data: cdArr[ci], idx: ci }); ci++; }
-  }
+function WindingTimeline({ memories, user, onSelect }) {
+  const svgHeight = Math.max(800, memories.length * 170 + 200);
 
   return (
     <div style={{ position: 'relative', minHeight: svgHeight, maxWidth: 700, margin: '0 auto' }}>
@@ -164,18 +152,11 @@ function WindingTimeline({ memories, countdowns, user, onSelect }) {
         />
       </svg>
 
-      {/* Interleaved cards and countdowns */}
-      {items.map((item, pos) => {
-        const t = (pos + 1) / (items.length + 1);
+      {/* Cards */}
+      {memories.map((memory, idx) => {
+        const t = (idx + 1) / (memories.length + 1);
         const percentY = (10 + t * 87);
-        const isLeft = pos % 2 === 0;
-
-        if (item.type === 'countdown') {
-          return <CountdownOrnament key={'cd-' + item.data.id} cd={item.data} isLeft={isLeft} percentY={percentY} pos={pos} />;
-        }
-
-        // Memory card
-        const memory = item.data;
+        const isLeft = idx % 2 === 0;
         const isFirst = memory.type === 'first' || memory.isFirst;
         const creator = USERS[memory.createdBy] || {};
         const hasImage = memory.mediaUrl?.startsWith('data:');
@@ -185,7 +166,7 @@ function WindingTimeline({ memories, countdowns, user, onSelect }) {
             initial={{ opacity: 0, y: 30, x: isLeft ? -20 : 20 }}
             whileInView={{ opacity: 1, y: 0, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.45, delay: item.idx * 0.03, ease: 'easeOut' }}
+            transition={{ duration: 0.45, delay: idx * 0.03, ease: 'easeOut' }}
             onClick={() => onSelect(memory)}
             style={{
               position: 'absolute', top: percentY + '%',
@@ -237,77 +218,6 @@ function WindingTimeline({ memories, countdowns, user, onSelect }) {
         );
       })}
     </div>
-  );
-}
-
-/** Mini countdown ornament hanging on the timeline */
-function CountdownOrnament({ cd, isLeft, percentY, pos }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
-
-  const diff = new Date(cd.targetDate).getTime() - now;
-  const days = diff > 0 ? Math.max(0, Math.floor(diff / 86400000)) : 0;
-  const hours = diff > 0 ? Math.floor((diff % 86400000) / 3600000) : 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.35, delay: pos * 0.02, ease: 'easeOut' }}
-      style={{
-        position: 'absolute', top: percentY + '%',
-        left: isLeft ? '2%' : 'auto', right: isLeft ? 'auto' : '2%',
-        width: 'clamp(160px, 40%, 280px)', zIndex: 2,
-        textAlign: 'center',
-      }}
-    >
-      <div className="hand-drawn-card flat" style={{
-        padding: '10px 12px',
-        background: 'var(--gradient-card)',
-        borderColor: diff <= 0 ? 'var(--color-gold)' : (days <= 7 ? 'var(--coral)60' : 'var(--border-color)'),
-        boxShadow: diff <= 0 ? 'var(--shadow-gold)' : 'var(--shadow-soft)',
-        transform: `rotate(${isLeft ? -0.8 : 0.8}deg)`,
-        animation: diff <= 0 ? 'pulse 2s ease-in-out infinite' : 'none',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
-          <span style={{ fontSize: '1.1rem' }}>{cd.icon}</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.78rem', color: 'var(--text-primary)' }}>
-            {cd.title.replace(cd.icon + ' ', '')}
-          </span>
-        </div>
-        {diff <= 0 ? (
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: 'var(--color-gold)' }}>🎉 就是今天！</div>
-        ) : (
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-            <div style={{
-              background: 'var(--bg-card)', border: '1.5px solid var(--border-color)',
-              borderRadius: 8, padding: '4px 8px', minWidth: 36,
-              fontSize: '0.95rem', fontFamily: 'var(--font-display)', color: days <= 30 ? 'var(--coral)' : 'var(--text-primary)',
-            }}>{String(days).padStart(2, '0')}</div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center' }}>天</span>
-            <div style={{
-              background: 'var(--bg-card)', border: '1.5px solid var(--border-color)',
-              borderRadius: 8, padding: '4px 8px', minWidth: 36,
-              fontSize: '0.95rem', fontFamily: 'var(--font-display)', color: 'var(--text-primary)',
-            }}>{String(hours).padStart(2, '0')}</div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center' }}>时</span>
-          </div>
-        )}
-        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 4 }}>
-          {cd.targetDate}
-        </div>
-      </div>
-      {/* Dot connecting to path */}
-      <div style={{
-        position: 'absolute', top: '50%', [isLeft ? 'right' : 'left']: '-8%',
-        transform: 'translate(50%, -50%)', width: 8, height: 8, borderRadius: '50%',
-        background: diff <= 0 ? 'var(--color-gold)' : 'var(--border-color)',
-        border: '2px solid var(--bg-primary)',
-        boxShadow: diff <= 0 ? '0 0 6px rgba(240,199,94,0.5)' : 'none',
-        zIndex: 3,
-      }} />
-    </motion.div>
   );
 }
 
