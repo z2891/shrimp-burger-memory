@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import MemoryPopup from './MemoryPopup.jsx';
@@ -7,7 +7,7 @@ import { USERS } from '../../utils/constants.js';
 
 const TYPE_INFO = { first: { icon: '🏆', label: '第一次' }, photo: { icon: '📸', label: '照片' }, diary: { icon: '📔', label: '日记' }, letter: { icon: '💌', label: '信件' } };
 
-export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteMemory }) {
+export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteMemory, countdowns }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedMemory, setSelectedMemory] = useState(null);
@@ -100,7 +100,7 @@ export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteM
           <button className="hand-drawn-btn primary" onClick={() => setShowAddForm(true)}>✨ 创建第一条回忆</button>
         </div>
       ) : (
-        <WindingTimeline memories={filtered} user={user} onSelect={setSelectedMemory} />
+        <WindingTimeline memories={filtered} countdowns={countdowns || []} user={user} onSelect={setSelectedMemory} />
       )}
 
       <AnimatePresence>
@@ -111,10 +111,20 @@ export default function TimeMap({ memories, onAddMemory, onEditMemory, onDeleteM
 }
 
 /** ===== WINDING S-CURVE TIMELINE ===== */
-function WindingTimeline({ memories, user, onSelect }) {
-  // We use an SVG path that winds down the page. Cards alternate left/right.
-  // SVG viewBox height scales with number of items.
-  const svgHeight = Math.max(800, memories.length * 200 + 100);
+function WindingTimeline({ memories, countdowns, user, onSelect }) {
+  // Interleave memory cards with countdown ornaments
+  // Memories carry the timeline, countdowns are smaller cards woven between them
+  const cdArr = countdowns || [];
+  const totalItems = memories.length + cdArr.length;
+  const svgHeight = Math.max(800, totalItems * 170 + 200);
+
+  // Build interleaved list: memory, countdown, memory, countdown...
+  const items = [];
+  let mi = 0, ci = 0;
+  while (mi < memories.length || ci < cdArr.length) {
+    if (mi < memories.length) { items.push({ type: 'memory', data: memories[mi], idx: mi }); mi++; }
+    if (ci < cdArr.length) { items.push({ type: 'countdown', data: cdArr[ci], idx: ci }); ci++; }
+  }
 
   return (
     <div style={{ position: 'relative', minHeight: svgHeight, maxWidth: 700, margin: '0 auto' }}>
@@ -125,14 +135,6 @@ function WindingTimeline({ memories, user, onSelect }) {
         preserveAspectRatio="xMidYMin slice"
       >
         <defs>
-          <linearGradient id="pathGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--shrimp-color)" />
-            <stop offset="25%" stopColor="var(--color-gold)" />
-            <stop offset="50%" stopColor="var(--burger-color)" />
-            <stop offset="75%" stopColor="var(--color-leaf)" />
-            <stop offset="100%" stopColor="var(--color-lavender)" />
-          </linearGradient>
-          {/* Correct the gradient for SVG by using direct colors */}
           <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#FF6B6B" />
             <stop offset="20%" stopColor="#F0C75E" />
@@ -141,8 +143,6 @@ function WindingTimeline({ memories, user, onSelect }) {
             <stop offset="100%" stopColor="#D4C5E8" />
           </linearGradient>
         </defs>
-
-        {/* Main winding path — S-curve */}
         <path
           d={`M 200 20 C 80 ${svgHeight * 0.08}, 320 ${svgHeight * 0.15}, 200 ${svgHeight * 0.22}
               C 80 ${svgHeight * 0.29}, 320 ${svgHeight * 0.36}, 200 ${svgHeight * 0.43}
@@ -153,7 +153,6 @@ function WindingTimeline({ memories, user, onSelect }) {
           opacity="0.35"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))' }}
         />
-        {/* Thinner inner line */}
         <path
           d={`M 200 20 C 80 ${svgHeight * 0.08}, 320 ${svgHeight * 0.15}, 200 ${svgHeight * 0.22}
               C 80 ${svgHeight * 0.29}, 320 ${svgHeight * 0.36}, 200 ${svgHeight * 0.43}
@@ -165,12 +164,18 @@ function WindingTimeline({ memories, user, onSelect }) {
         />
       </svg>
 
-      {/* Cards */}
-      {memories.map((memory, idx) => {
-        const isLeft = idx % 2 === 0;
-        // Calculate position along the SVG path (0..1)
-        const t = (idx + 1) / (memories.length + 1);
-        const percentY = (15 + t * 82); // 15% to 97% of container
+      {/* Interleaved cards and countdowns */}
+      {items.map((item, pos) => {
+        const t = (pos + 1) / (items.length + 1);
+        const percentY = (10 + t * 87);
+        const isLeft = pos % 2 === 0;
+
+        if (item.type === 'countdown') {
+          return <CountdownOrnament key={'cd-' + item.data.id} cd={item.data} isLeft={isLeft} percentY={percentY} pos={pos} />;
+        }
+
+        // Memory card
+        const memory = item.data;
         const isFirst = memory.type === 'first' || memory.isFirst;
         const creator = USERS[memory.createdBy] || {};
         const hasImage = memory.mediaUrl?.startsWith('data:');
@@ -180,120 +185,129 @@ function WindingTimeline({ memories, user, onSelect }) {
             initial={{ opacity: 0, y: 30, x: isLeft ? -20 : 20 }}
             whileInView={{ opacity: 1, y: 0, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.45, delay: idx * 0.04, ease: 'easeOut' }}
+            transition={{ duration: 0.45, delay: item.idx * 0.03, ease: 'easeOut' }}
             onClick={() => onSelect(memory)}
             style={{
-              position: 'absolute',
-              top: percentY + '%',
-              left: isLeft ? '2%' : 'auto',
-              right: isLeft ? 'auto' : '2%',
-              width: 'clamp(180px, 46%, 320px)',
-              cursor: 'pointer',
-              zIndex: 2,
+              position: 'absolute', top: percentY + '%',
+              left: isLeft ? '2%' : 'auto', right: isLeft ? 'auto' : '2%',
+              width: 'clamp(180px, 46%, 320px)', cursor: 'pointer', zIndex: 2,
             }}
           >
-            {/* Connecting line from card to path */}
             <div style={{
-              position: 'absolute',
-              top: '50%',
-              [isLeft ? 'right' : 'left']: '-12%',
-              width: '12%',
-              height: 2,
-              background: creator.color || 'var(--border-color)',
-              opacity: 0.5,
-            }}>
-              {/* Small dot at path end */}
-            </div>
-
-            {/* Shadow layer for 3D depth */}
-            <div style={{
-              position: 'absolute', inset: -3,
-              borderRadius: 'var(--radius-card)',
+              position: 'absolute', inset: -3, borderRadius: 'var(--radius-card)',
               background: isFirst ? 'rgba(240,199,94,0.2)' : 'rgba(0,0,0,0.06)',
-              transform: `translateY(6px) rotate(${isLeft ? -0.5 : 0.5}deg)`,
-              pointerEvents: 'none',
+              transform: `translateY(6px) rotate(${isLeft ? -0.5 : 0.5}deg)`, pointerEvents: 'none',
             }} />
-
-            {/* Card */}
             <div className={`hand-drawn-card flat${isFirst ? ' golden' : ''}`}
               style={{
                 padding: 0, overflow: 'hidden',
                 transform: `rotate(${isLeft ? 1.5 : -1.5}deg) perspective(600px) rotateY(${isLeft ? 2 : -2}deg)`,
-                boxShadow: isFirst
-                  ? '0 8px 30px rgba(240,199,94,0.2), 0 2px 8px rgba(0,0,0,0.08)'
-                  : '0 6px 20px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06)',
-                borderColor: isFirst ? 'var(--color-gold)' : 'var(--border-color)',
+                boxShadow: isFirst ? '0 8px 30px rgba(240,199,94,0.2), 0 2px 8px rgba(0,0,0,0.08)' : '0 6px 20px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06)',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = `rotate(${isLeft ? 0.5 : -0.5}deg) perspective(600px) rotateY(0deg) translateY(-3px)`; e.currentTarget.style.boxShadow = '0 12px 36px rgba(0,0,0,0.16), 0 4px 12px rgba(0,0,0,0.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = `rotate(${isLeft ? 1.5 : -1.5}deg) perspective(600px) rotateY(${isLeft ? 2 : -2}deg)`; e.currentTarget.style.boxShadow = isFirst ? '0 8px 30px rgba(240,199,94,0.2), 0 2px 8px rgba(0,0,0,0.08)' : '0 6px 20px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06)'; }}
+              onMouseEnter={e => { e.currentTarget.style.transform = `rotate(${isLeft ? 0.5 : -0.5}deg) perspective(600px) rotateY(0deg) translateY(-3px)`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = `rotate(${isLeft ? 1.5 : -1.5}deg) perspective(600px) rotateY(${isLeft ? 2 : -2}deg)`; }}
             >
-              {/* Color strip */}
               <div style={{ height: 3, background: creator.color || 'var(--border-color)', opacity: 0.45 }} />
-
               <div style={{ padding: '10px 12px' }}>
-                {/* Meta row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                    {memory.date?.slice(5)}
-                  </span>
-                  <span style={{ fontSize: '0.62rem', color: creator.color || 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{memory.date?.slice(5)}</span>
+                  <span style={{ fontSize: '0.62rem', color: creator.color, display: 'flex', alignItems: 'center', gap: 3 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: creator.color, display: 'inline-block' }} />
                     {{ first: '第一次', photo: '照片', diary: '日记', letter: '信件' }[memory.type] || '记忆'}
                   </span>
                 </div>
-
-                {/* Thumbnail */}
-                {hasImage && (
-                  <div style={{ marginBottom: 6, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                    <img src={memory.mediaUrl} alt="" style={{ width: '100%', maxHeight: 100, objectFit: 'cover', display: 'block' }} />
-                  </div>
-                )}
-
-                {/* Title */}
-                <h3 style={{
-                  fontFamily: 'var(--font-display)', fontSize: isFirst ? '0.92rem' : '0.82rem',
-                  margin: '0 0 2px', lineHeight: 1.3,
-                }}>
-                  {isFirst && <span style={{ marginRight: 3, fontSize: '0.85rem' }}>{memory.badge || '⭐'}</span>}
-                  {memory.title}
+                {hasImage && <div style={{ marginBottom: 6, borderRadius: 8, overflow: 'hidden' }}><img src={memory.mediaUrl} alt="" style={{ width: '100%', maxHeight: 100, objectFit: 'cover', display: 'block' }} /></div>}
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: isFirst ? '0.92rem' : '0.82rem', margin: '0 0 2px', lineHeight: 1.3 }}>
+                  {isFirst && <span style={{ marginRight: 3, fontSize: '0.85rem' }}>{memory.badge || '⭐'}</span>}{memory.title}
                 </h3>
-
-                {/* Description */}
-                {memory.description && (
-                  <p style={{
-                    fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0,
-                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                  }}>
-                    {memory.description}
-                  </p>
-                )}
-
-                {/* Emotion emoji tag */}
-                {memory.moodEmoji && (
-                  <div style={{ marginTop: 6, textAlign: isLeft ? 'left' : 'right' }}>
-                    <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>{memory.moodEmoji}</span>
-                  </div>
-                )}
+                {memory.description && <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: 1.4, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{memory.description}</p>}
+                {memory.moodEmoji && <div style={{ marginTop: 6, textAlign: isLeft ? 'left' : 'right' }}><span style={{ fontSize: '0.9rem', opacity: 0.7 }}>{memory.moodEmoji}</span></div>}
               </div>
             </div>
-
-            {/* Dot on the path */}
             <div style={{
-              position: 'absolute', top: '50%',
-              [isLeft ? 'right' : 'left']: '-14%',
-              transform: 'translate(50%, -50%)',
-              width: 12, height: 12, borderRadius: '50%',
+              position: 'absolute', top: '50%', [isLeft ? 'right' : 'left']: '-10%',
+              transform: 'translate(50%, -50%)', width: 12, height: 12, borderRadius: '50%',
               background: isFirst ? 'var(--color-gold)' : (creator.color || 'var(--border-color)'),
               border: '2px solid var(--bg-primary)',
               boxShadow: isFirst ? '0 0 8px rgba(240,199,94,0.5)' : `0 0 4px ${creator.color || '#ccc'}40`,
-              zIndex: 3,
-              animation: isFirst ? 'pulse 2.5s ease-in-out infinite' : 'none',
+              zIndex: 3, animation: isFirst ? 'pulse 2.5s ease-in-out infinite' : 'none',
             }} />
           </motion.div>
         );
       })}
     </div>
+  );
+}
+
+/** Mini countdown ornament hanging on the timeline */
+function CountdownOrnament({ cd, isLeft, percentY, pos }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+
+  const diff = new Date(cd.targetDate).getTime() - now;
+  const days = diff > 0 ? Math.max(0, Math.floor(diff / 86400000)) : 0;
+  const hours = diff > 0 ? Math.floor((diff % 86400000) / 3600000) : 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.35, delay: pos * 0.02, ease: 'easeOut' }}
+      style={{
+        position: 'absolute', top: percentY + '%',
+        left: isLeft ? '2%' : 'auto', right: isLeft ? 'auto' : '2%',
+        width: 'clamp(160px, 40%, 280px)', zIndex: 2,
+        textAlign: 'center',
+      }}
+    >
+      <div className="hand-drawn-card flat" style={{
+        padding: '10px 12px',
+        background: 'var(--gradient-card)',
+        borderColor: diff <= 0 ? 'var(--color-gold)' : (days <= 7 ? 'var(--coral)60' : 'var(--border-color)'),
+        boxShadow: diff <= 0 ? 'var(--shadow-gold)' : 'var(--shadow-soft)',
+        transform: `rotate(${isLeft ? -0.8 : 0.8}deg)`,
+        animation: diff <= 0 ? 'pulse 2s ease-in-out infinite' : 'none',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+          <span style={{ fontSize: '1.1rem' }}>{cd.icon}</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.78rem', color: 'var(--text-primary)' }}>
+            {cd.title.replace(cd.icon + ' ', '')}
+          </span>
+        </div>
+        {diff <= 0 ? (
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.95rem', color: 'var(--color-gold)' }}>🎉 就是今天！</div>
+        ) : (
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+            <div style={{
+              background: 'var(--bg-card)', border: '1.5px solid var(--border-color)',
+              borderRadius: 8, padding: '4px 8px', minWidth: 36,
+              fontSize: '0.95rem', fontFamily: 'var(--font-display)', color: days <= 30 ? 'var(--coral)' : 'var(--text-primary)',
+            }}>{String(days).padStart(2, '0')}</div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center' }}>天</span>
+            <div style={{
+              background: 'var(--bg-card)', border: '1.5px solid var(--border-color)',
+              borderRadius: 8, padding: '4px 8px', minWidth: 36,
+              fontSize: '0.95rem', fontFamily: 'var(--font-display)', color: 'var(--text-primary)',
+            }}>{String(hours).padStart(2, '0')}</div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', alignSelf: 'center' }}>时</span>
+          </div>
+        )}
+        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: 4 }}>
+          {cd.targetDate}
+        </div>
+      </div>
+      {/* Dot connecting to path */}
+      <div style={{
+        position: 'absolute', top: '50%', [isLeft ? 'right' : 'left']: '-8%',
+        transform: 'translate(50%, -50%)', width: 8, height: 8, borderRadius: '50%',
+        background: diff <= 0 ? 'var(--color-gold)' : 'var(--border-color)',
+        border: '2px solid var(--bg-primary)',
+        boxShadow: diff <= 0 ? '0 0 6px rgba(240,199,94,0.5)' : 'none',
+        zIndex: 3,
+      }} />
+    </motion.div>
   );
 }
 

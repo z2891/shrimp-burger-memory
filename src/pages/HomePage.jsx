@@ -24,88 +24,19 @@ export default function HomePage() {
     <div style={{ paddingBottom: 16 }}>
       <MiniCalendar countdowns={countdowns} />
 
-      {/* Two-column layout: sidebar on desktop, stacked on mobile */}
-      <div className="home-layout">
-        {/* Mobile only: compact countdown strip */}
-        <div className="mobile-only">
-          <CountdownStrip countdowns={countdowns} />
-        </div>
-
-        <div className="home-grid">
-          {/* Main timeline */}
-          <div className="home-main">
-            <TimeMap
-              memories={data.memories || []}
-              onAddMemory={(d) => addMemory({ id: generateId(), ...d })}
-              onEditMemory={updateMemory}
-              onDeleteMemory={deleteMemory}
-            />
-          </div>
-
-          {/* Desktop sidebar */}
-          <SidebarCountdowns countdowns={countdowns} />
-        </div>
+      {/* Mobile only: compact countdown strip */}
+      <div className="mobile-only">
+        <CountdownStrip countdowns={countdowns} />
       </div>
-    </div>
-  );
-}
 
-/** ===== DESKTOP SIDEBAR COUNTDOWNS ===== */
-function SidebarCountdowns({ countdowns }) {
-  if (countdowns.length === 0) return null;
-
-  return (
-    <div className="home-sidebar" style={{ position: 'sticky', top: 60, alignSelf: 'flex-start' }}>
-        <div className="hand-drawn-card" style={{ padding: 14 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', marginBottom: 12, textAlign: 'center' }}>
-            ⏳ 倒数计时
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {countdowns.map(cd => (
-              <SideCountdown key={cd.id} cd={cd} />
-            ))}
-          </div>
-        </div>
-    </div>
-  );
-}
-
-function SideCountdown({ cd }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
-
-  const diff = new Date(cd.targetDate).getTime() - now;
-  const days = diff > 0 ? Math.max(0, Math.floor(diff / 86400000)) : 0;
-  const hours = diff > 0 ? Math.floor((diff % 86400000) / 3600000) : 0;
-  const mins = diff > 0 ? Math.floor((diff % 3600000) / 60000) : 0;
-
-  return (
-    <div style={{
-      background: 'var(--bg-primary)', borderRadius: 12,
-      padding: 10, border: '1px solid var(--border-color)',
-    }}>
-      <div style={{ fontSize: '0.7rem', fontFamily: 'var(--font-body)', color: 'var(--text-secondary)', marginBottom: 4, textAlign: 'center' }}>
-        {cd.icon} {cd.title.replace(cd.icon + ' ', '')}
-      </div>
-      {diff <= 0 ? (
-        <div style={{ textAlign: 'center', fontSize: '0.85rem', fontFamily: 'var(--font-display)', color: 'var(--color-gold)' }}>🎉 就是今天！</div>
-      ) : (
-        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {[{ v: days, l: '天' }, { v: hours, l: '时' }, { v: mins, l: '分' }].map(({ v, l }) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{
-                background: 'var(--bg-card)', border: '1.5px solid var(--border-color)',
-                borderRadius: 6, padding: '3px 6px', minWidth: 32,
-                fontSize: '0.85rem', fontFamily: 'var(--font-display)', color: 'var(--coral)',
-              }}>{String(v).padStart(2, '0')}</div>
-              <div style={{ fontSize: '0.5rem', color: 'var(--text-muted)' }}>{l}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 4 }}>
-        {cd.targetDate}
-      </div>
+      {/* Timeline with countdowns woven in */}
+      <TimeMap
+        memories={data.memories || []}
+        countdowns={countdowns}
+        onAddMemory={(d) => addMemory({ id: generateId(), ...d })}
+        onEditMemory={updateMemory}
+        onDeleteMemory={deleteMemory}
+      />
     </div>
   );
 }
