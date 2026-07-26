@@ -17,10 +17,11 @@ export default function FirstsPage() {
     e.preventDefault();
     if (!form.title.trim() || !form.date) return;
     if (editing === 'new') {
-      const newFirst = { title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge, unlocked: true };
+      const firstId = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+      const newFirst = { id: firstId, title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge, unlocked: true };
       addFirst(newFirst);
-      // Auto-add to timeline
-      addMemory({ type: 'first', title: newFirst.title, description: newFirst.description, date: newFirst.date, createdBy: 'xia-mi', isFirst: true, badge: newFirst.badge, mood: 'happy-bubble', moodEmoji: '🏆' });
+      // Auto-add to timeline with matching deterministic ID so sync won't duplicate
+      addMemory({ id: 'mem_first_' + firstId, type: 'first', title: newFirst.title, description: newFirst.description, date: newFirst.date, createdBy: 'xia-mi', isFirst: true, badge: newFirst.badge, mood: 'happy-bubble', moodEmoji: '🏆' });
     } else updateFirst(editing.id, { title: form.title.trim(), date: form.date, description: form.description.trim(), badge: form.badge });
     setEditing(null);
   };

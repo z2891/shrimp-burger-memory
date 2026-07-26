@@ -60,36 +60,33 @@ export function DataProvider({ children }) {
     const diaries = all.diary || [];
     const letters = all.letters || [];
 
-    // Match by checking if any timeline card already references this diary/letter by title+type
-    const existingTimelineTitles = new Set(
-      memories.filter(m => m.type === 'diary' || m.type === 'letter').map(m => m.type + '::' + m.description?.slice(0, 40))
-    );
+    // Match by deterministic ID — if a timeline card with the source ID already exists, skip.
+    // This ensures deleted cards aren't recreated on next load.
+    const existingIds = new Set(memories.map(m => m.id));
     const toAdd = [];
 
     diaries.forEach(entry => {
+      const memId = 'mem_diary_' + entry.id;
+      if (existingIds.has(memId)) return;
       const shrimpEntry = entry.entries?.['xia-mi'];
       const burgerEntry = entry.entries?.['han-bao'];
       const content = shrimpEntry?.content || burgerEntry?.content || '';
       const createdBy = shrimpEntry?.content ? 'xia-mi' : (burgerEntry?.content ? 'han-bao' : 'xia-mi');
       if (!content) return;
-      const desc = content.slice(0, 150) + (content.length > 150 ? '...' : '');
-      if (existingTimelineTitles.has('diary::' + desc.slice(0, 40))) return;
-
       toAdd.push({
-        id: 'diary_' + entry.id,
-        type: 'diary', title: entry.topic || '无主题日记',
-        description: desc, date: entry.date || '',
-        createdBy, mood: 'cozy', moodEmoji: '📔',
+        id: memId, type: 'diary', title: entry.topic || '无主题日记',
+        description: content.slice(0, 150) + (content.length > 150 ? '...' : ''),
+        date: entry.date || '', createdBy, mood: 'cozy', moodEmoji: '📔',
       });
     });
 
     letters.forEach(letter => {
+      const memId = 'mem_letter_' + letter.id;
+      if (existingIds.has(memId)) return;
+      if (!letter.content) return;
       const desc = (letter.content || '').slice(0, 150) + ((letter.content || '').length > 150 ? '...' : '');
-      if (!letter.content || existingTimelineTitles.has('letter::' + desc.slice(0, 40))) return;
-
       toAdd.push({
-        id: 'letter_' + letter.id,
-        type: 'letter', title: '💌 ' + (letter.title || '一封时光信'),
+        id: memId, type: 'letter', title: '💌 ' + (letter.title || '一封时光信'),
         description: desc,
         date: new Date(letter.writtenAt || Date.now()).toISOString().split('T')[0],
         createdBy: letter.from || 'xia-mi', mood: 'excited', moodEmoji: '💌',
@@ -98,21 +95,15 @@ export function DataProvider({ children }) {
 
     // Sync firsts to timeline
     const firsts = all.firsts || [];
-    const existingFirstTitles = new Set(
-      memories.filter(m => m.type === 'first').map(m => m.title)
-    );
     firsts.forEach(f => {
-      if (!existingFirstTitles.has(f.title)) {
-        toAdd.push({
-          id: 'first_' + f.id,
-          type: 'first', title: f.title,
-          description: f.description || '',
-          date: f.date || '',
-          createdBy: 'xia-mi',
-          isFirst: true, badge: f.badge || '⭐',
-          mood: 'happy-bubble', moodEmoji: '🏆',
-        });
-      }
+      const memId = 'mem_first_' + f.id;
+      if (existingIds.has(memId)) return;
+      toAdd.push({
+        id: memId, type: 'first', title: f.title,
+        description: f.description || '', date: f.date || '',
+        createdBy: 'xia-mi', isFirst: true, badge: f.badge || '⭐',
+        mood: 'happy-bubble', moodEmoji: '🏆',
+      });
     });
 
     if (toAdd.length > 0) {
