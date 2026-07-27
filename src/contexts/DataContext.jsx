@@ -47,75 +47,11 @@ export function DataProvider({ children }) {
       keys.forEach((k, i) => { all[k] = results[i] || []; });
       setData(all);
 
-      // One-time sync: create timeline cards for existing diary/letters that don't have one yet
-      await syncMissingTimelineEntries(all);
+      // No more auto-sync — each module handles its own timeline entries
+      // This prevents deleted cards from being resurrected
 
     } catch (e) { console.warn('loadAll fatal:', e); }
     setLoading(false);
-  }
-
-  // Sync missing timeline entries from diary, letters, firsts
-  async function syncMissingTimelineEntries(all) {
-    const memories = all.memories || [];
-    const diaries = all.diary || [];
-    const letters = all.letters || [];
-
-    // Match by deterministic ID — if a timeline card with the source ID already exists, skip.
-    // This ensures deleted cards aren't recreated on next load.
-    const existingIds = new Set(memories.map(m => m.id));
-    const toAdd = [];
-
-    diaries.forEach(entry => {
-      const memId = 'mem_diary_' + entry.id;
-      if (existingIds.has(memId)) return;
-      const shrimpEntry = entry.entries?.['xia-mi'];
-      const burgerEntry = entry.entries?.['han-bao'];
-      const content = shrimpEntry?.content || burgerEntry?.content || '';
-      const createdBy = shrimpEntry?.content ? 'xia-mi' : (burgerEntry?.content ? 'han-bao' : 'xia-mi');
-      if (!content) return;
-      toAdd.push({
-        id: memId, type: 'diary', title: entry.topic || '无主题日记',
-        description: content.slice(0, 150) + (content.length > 150 ? '...' : ''),
-        date: entry.date || '', createdBy, mood: 'cozy', moodEmoji: '📔',
-      });
-    });
-
-    letters.forEach(letter => {
-      const memId = 'mem_letter_' + letter.id;
-      if (existingIds.has(memId)) return;
-      if (!letter.content) return;
-      const desc = (letter.content || '').slice(0, 150) + ((letter.content || '').length > 150 ? '...' : '');
-      toAdd.push({
-        id: memId, type: 'letter', title: '💌 ' + (letter.title || '一封时光信'),
-        description: desc,
-        date: new Date(letter.writtenAt || Date.now()).toISOString().split('T')[0],
-        createdBy: letter.from || 'xia-mi', mood: 'excited', moodEmoji: '💌',
-      });
-    });
-
-    // Sync firsts to timeline
-    const firsts = all.firsts || [];
-    firsts.forEach(f => {
-      const memId = 'mem_first_' + f.id;
-      if (existingIds.has(memId)) return;
-      toAdd.push({
-        id: memId, type: 'first', title: f.title,
-        description: f.description || '', date: f.date || '',
-        createdBy: 'xia-mi', isFirst: true, badge: f.badge || '⭐',
-        mood: 'happy-bubble', moodEmoji: '🏆',
-      });
-    });
-
-    if (toAdd.length > 0) {
-      console.log('Syncing', toAdd.length, 'missing timeline entries');
-      for (const item of toAdd) {
-        const { error } = await supabase.from('couple_memories').upsert(item, { onConflict: 'id' });
-        if (error) console.warn('Sync insert error:', error.message);
-      }
-      // Reload memories
-      const { data: fresh } = await supabase.from('couple_memories').select('*').order('date', { ascending: false });
-      if (fresh) setData(prev => ({ ...prev, memories: fresh }));
-    }
   }
 
   function generateId() {
