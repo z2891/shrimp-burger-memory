@@ -54,16 +54,20 @@ export default function DiaryPage() {
         updateDiaryEntry(editingEntry.id, { entries: updatedEntries });
       }
 
-      // Upsert timeline card
+      // Upsert timeline card — show preview from both persons if both have written
+      const bothWritten = updatedEntries['xia-mi']?.content && updatedEntries['han-bao']?.content;
+      const desc = bothWritten
+        ? `🦐${(updatedEntries['xia-mi']?.content || '').slice(0, 70)}...\n🍔${(updatedEntries['han-bao']?.content || '').slice(0, 70)}...`
+        : entryData.content.slice(0, 150) + (entryData.content.length > 150 ? '...' : '');
       addMemory({
         id: 'mem_diary_' + editingEntry.id,
         type: 'diary',
         title: entryData.topic || editingEntry.topic,
-        description: entryData.content.slice(0, 150) + (entryData.content.length > 150 ? '...' : ''),
+        description: desc,
         date: entryData.date || editingEntry.date,
-        createdBy: user?.username,
-        mood: entryData.mood,
-        moodEmoji: '📔',
+        createdBy: bothWritten ? 'xia-mi' : user?.username,
+        mood: bothWritten ? 'love' : entryData.mood,
+        moodEmoji: bothWritten ? '✅' : '📔',
       });
     } else {
       // New diary

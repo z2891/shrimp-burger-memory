@@ -64,7 +64,7 @@ export function DataProvider({ children }) {
     // Optimistic: add to local state immediately
     setData(prev => ({ ...prev, [key]: [...(prev[key] || []), newItem] }));
     // Sync to Supabase
-    supabase.from(TABLES[key]).insert(newItem).then(({ error }) => {
+    supabase.from(TABLES[key]).upsert(newItem, { onConflict: 'id' }).then(({ error }) => {
       if (error) console.warn(`Supabase insert ${key}:`, error);
     });
     return newItem;
