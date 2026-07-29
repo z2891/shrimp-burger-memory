@@ -61,11 +61,20 @@ export function DataProvider({ children }) {
   // Optimistic CRUD — update local state immediately, sync to Supabase in background
   const add = useCallback(async (key, item) => {
     const newItem = { ...item, id: item.id || generateId() };
-    // Optimistic: add to local state immediately
-    setData(prev => ({ ...prev, [key]: [...(prev[key] || []), newItem] }));
+    // Optimistic: replace if same ID exists, otherwise append
+    setData(prev => {
+      const list = prev[key] || [];
+      const idx = list.findIndex(x => x.id === newItem.id);
+      if (idx >= 0) {
+        const updated = [...list];
+        updated[idx] = { ...updated[idx], ...newItem };
+        return { ...prev, [key]: updated };
+      }
+      return { ...prev, [key]: [...list, newItem] };
+    });
     // Sync to Supabase
     supabase.from(TABLES[key]).upsert(newItem, { onConflict: 'id' }).then(({ error }) => {
-      if (error) console.warn(`Supabase insert ${key}:`, error);
+      if (error) console.warn(`Supabase upsert ${key}:`, error);
     });
     return newItem;
   }, []);

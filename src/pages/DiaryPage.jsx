@@ -43,18 +43,14 @@ export default function DiaryPage() {
     };
 
     if (editingEntry) {
-      // Always just update this user's entry in the existing diary
-      if (!editingEntry.entries?.[user.username]?.content) {
-        // First time writing — set currentTurn
-        updateDiaryEntry(editingEntry.id, {
-          entries: updatedEntries,
-          currentTurn: user.username === 'xia-mi' ? 'han-bao' : 'xia-mi',
-        });
-      } else {
-        updateDiaryEntry(editingEntry.id, { entries: updatedEntries });
-      }
+      const isFirstTime = !editingEntry.entries?.[user.username]?.content;
 
-      // Upsert timeline card — show preview from both persons if both have written
+      updateDiaryEntry(editingEntry.id, {
+        entries: updatedEntries,
+        currentTurn: isFirstTime ? (user.username === 'xia-mi' ? 'han-bao' : 'xia-mi') : editingEntry.currentTurn,
+      });
+
+      // Upsert timeline card — same ID as first person's card, add() now deduplicates locally
       const bothWritten = updatedEntries['xia-mi']?.content && updatedEntries['han-bao']?.content;
       const desc = bothWritten
         ? `🦐${(updatedEntries['xia-mi']?.content || '').slice(0, 70)}...\n🍔${(updatedEntries['han-bao']?.content || '').slice(0, 70)}...`
